@@ -6,12 +6,12 @@ from enum import Enum
 from socketIO_client import SocketIO, BaseNamespace, LoggingNamespace
 import logging
 
-class ActionType(Enum): # différents types d'actions pris en charge par les rasperries
+class ActionType(Enum): # differents types d'actions pris en charge par les rasperries
 	MOTION=1
 	SERVO=2
 	RELAY=3
 
-CLIENT_MODES=[ActionType.MOTION, ActionType.SERVO, ActionType.RELAY]
+CLIENT_MODES=[ActionType.SERVO, ActionType.RELAY]
 
 class MotionNamespace(BaseNamespace):
 	def on_command(self, *args):
@@ -23,7 +23,7 @@ class MotionNamespace(BaseNamespace):
 class ServoNamespace(BaseNamespace):
 	def on_command(self, *args):
 		print('servo', args)
-		#servo.runScriptSub(args[0])
+		servo.runScriptSub(int(args[0]))
 
 class RelayNamespace(BaseNamespace):
 	def on_command(self, *args):
@@ -40,7 +40,8 @@ class RaspiNamespace(BaseNamespace):
 #logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 #logging.basicConfig()
 
-socketIO = SocketIO('127.0.0.1', 5000, LoggingNamespace)
+socketIO = SocketIO('192.168.1.20', 80, LoggingNamespace, verify=False)
+
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
 if(ActionType.MOTION in CLIENT_MODES):
@@ -50,8 +51,8 @@ if(ActionType.MOTION in CLIENT_MODES):
 	#serial = wiringpi.serialOpen('/dev/serial0',9600)
 if(ActionType.SERVO in CLIENT_MODES):
 	servo_namespace = socketIO.define(ServoNamespace, '/servo')
-	#import maestro
-	#servo = maestro.Controller()
+	import maestro
+	servo = maestro.Controller()
 if(ActionType.RELAY in CLIENT_MODES):
 	relay_namespace = socketIO.define(RelayNamespace, '/relay')
 
