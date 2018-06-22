@@ -40,7 +40,7 @@ class RaspiNamespace(BaseNamespace):
 #logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 #logging.basicConfig()
 
-socketIO = SocketIO('192.168.1.20', 80, LoggingNamespace, verify=False)
+socketIO = SocketIO('192.168.1.20', 80, LoggingNamespace)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
