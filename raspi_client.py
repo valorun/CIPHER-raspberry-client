@@ -28,7 +28,17 @@ class ServoNamespace(BaseNamespace):
 class RelayNamespace(BaseNamespace):
 	def on_command(self, *args):
 		print('relay', args)
-		#TODO prendre en compte le cas où il n'y a pas détat spécifié
+		gpio=int(args[0])
+		state=args[1]
+		if(state==""): #dans le cas ou un etat n'est pas specifie
+			state=wiringpi.digitalRead(gpio)
+			if(state==1):
+				state=0
+			else:
+				state=1
+		wiringpi.pinMode(gpio,1)
+		wiringpi.digitalWrite(gpio,state)
+		#TODO prendre en compte le cas ou il n'y a pas détat spécifié
 
 class RaspiNamespace(BaseNamespace):
 	def on_shutdown(self, *args):
@@ -40,7 +50,7 @@ class RaspiNamespace(BaseNamespace):
 #logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 #logging.basicConfig()
 
-socketIO = SocketIO('192.168.1.20', 80, LoggingNamespace)
+socketIO = SocketIO('192.168.1.20', 5000, LoggingNamespace)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
@@ -55,5 +65,7 @@ if(ActionType.SERVO in CLIENT_MODES):
 	servo = maestro.Controller()
 if(ActionType.RELAY in CLIENT_MODES):
 	relay_namespace = socketIO.define(RelayNamespace, '/relay')
+	import wiringpi
+	wiringpi.wiringPiSetupGpio() 
 
 socketIO.wait()
