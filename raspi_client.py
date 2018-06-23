@@ -11,15 +11,15 @@ class ActionType(Enum): # differents types d'actions pris en charge par les rasp
 	SERVO=2
 	RELAY=3
 
-CLIENT_MODES=[ActionType.SERVO, ActionType.RELAY]
+CLIENT_MODES=[ActionType.MOTION, ActionType.RELAY]
 
 class MotionNamespace(BaseNamespace):
 	def on_command(self, *args):
 		print('motion', args)
-		#m1Speed = args[0].split(",")[0]
-		##m2Speed = args[0].split(",")[1]
-		#wiringpi.serialPuts(serial,'M1: '+ m1Speed +'\r\n')
-		#wiringpi.serialPuts(serial,'M2: '+ m2Speed +'\r\n')
+		m1Speed = args[0].split(",")[0]
+		m2Speed = args[0].split(",")[1]
+		wiringpi.serialPuts(serial,'M1: '+ m1Speed +'\r\n')
+		wiringpi.serialPuts(serial,'M2: '+ m2Speed +'\r\n')
 class ServoNamespace(BaseNamespace):
 	def on_command(self, *args):
 		print('servo', args)
@@ -50,15 +50,15 @@ class RaspiNamespace(BaseNamespace):
 #logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 #logging.basicConfig()
 
-socketIO = SocketIO('192.168.1.20', 5000, LoggingNamespace)
+socketIO = SocketIO('192.168.1.78', 5000, LoggingNamespace)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
 if(ActionType.MOTION in CLIENT_MODES):
 	motion_namespace = socketIO.define(MotionNamespace, '/motion')
-	#import wiringpi, sys
-	#wiringpi.wiringPiSetup()
-	#serial = wiringpi.serialOpen('/dev/serial0',9600)
+	import wiringpi, sys
+	wiringpi.wiringPiSetup()
+	serial = wiringpi.serialOpen('/dev/serial0',9600)
 if(ActionType.SERVO in CLIENT_MODES):
 	servo_namespace = socketIO.define(ServoNamespace, '/servo')
 	import maestro
