@@ -11,11 +11,14 @@ class ActionType(Enum): # differents types d'actions pris en charge par les rasp
 	SERVO=2
 	RELAY=3
 
+debug=True
 CLIENT_MODES=[ActionType.MOTION, ActionType.RELAY]
 
 class MotionNamespace(BaseNamespace):
 	def on_command(self, *args):
 		print('motion', args)
+		if debug:
+			return
 		m1Speed = args[0].split(",")[0]
 		m2Speed = args[0].split(",")[1]
 		wiringpi.serialPuts(serial,'M1: '+ m1Speed +'\r\n')
@@ -23,12 +26,17 @@ class MotionNamespace(BaseNamespace):
 class ServoNamespace(BaseNamespace):
 	def on_command(self, *args):
 		print('servo', args)
+		if debug:
+			return
 		servo.runScriptSub(int(args[0]))
 
 class RelayNamespace(BaseNamespace):
 	def on_command(self, *args):
 		print('relay', args)
-		gpio=int(args[0])
+		if debug:
+			self.on_get_state(args[0])
+			return
+		gpio=str(args[0])
 		state=args[1]
 		if(state==""): #dans le cas ou un etat n'est pas specifie
 			state=wiringpi.digitalRead(gpio)
@@ -38,34 +46,51 @@ class RelayNamespace(BaseNamespace):
 				state=1
 		wiringpi.pinMode(gpio,1)
 		wiringpi.digitalWrite(gpio,state)
+		self.on_get_state(args[0])
 		#TODO prendre en compte le cas ou il n'y a pas détat spécifié
-
+		
+	def on_get_state(self, *args):
+		gpio=str(args[0])
+		if debug:
+			state=0
+		else:
+			state=wiringpi.digitalRead(gpio)
+		self.emit('update_state', gpio, state)
+	
 class RaspiNamespace(BaseNamespace):
 	def on_shutdown(self, *args):
 		print('shudown', args)
+		if debug:
+			return
 	def on_reboot(self, *args):
 		print('reboot', args)
+		if debug:
+			return
 
 
-#logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
-#logging.basicConfig()
+if debug:
+	logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
+	logging.basicConfig()
 
-socketIO = SocketIO('192.168.1.78', 5000, LoggingNamespace)
+socketIO = SocketIO('localhost', 5000, LoggingNamespace)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
 if(ActionType.MOTION in CLIENT_MODES):
 	motion_namespace = socketIO.define(MotionNamespace, '/motion')
-	import wiringpi, sys
-	wiringpi.wiringPiSetup()
-	serial = wiringpi.serialOpen('/dev/serial0',9600)
+	if not debug:
+		import wiringpi, sys
+		wiringpi.wiringPiSetup()
+		serial = wiringpi.serialOpen('/dev/serial0',9600)
 if(ActionType.SERVO in CLIENT_MODES):
 	servo_namespace = socketIO.define(ServoNamespace, '/servo')
-	import maestro
-	servo = maestro.Controller()
+	if not debug:
+		import maestro
+		servo = maestro.Controller()
 if(ActionType.RELAY in CLIENT_MODES):
 	relay_namespace = socketIO.define(RelayNamespace, '/relay')
-	import wiringpi
-	wiringpi.wiringPiSetupGpio() 
+	if not debug:
+		import wiringpi
+		wiringpi.wiringPiSetupGpio() 
 
 socketIO.wait()
