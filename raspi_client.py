@@ -11,7 +11,7 @@ class ActionType(Enum): # differents types d'actions pris en charge par les rasp
 	SERVO=2
 	RELAY=3
 
-debug=True
+debug=False
 CLIENT_MODES=[ActionType.MOTION, ActionType.RELAY]
 
 class MotionNamespace(BaseNamespace):
@@ -36,7 +36,7 @@ class RelayNamespace(BaseNamespace):
 		if debug:
 			self.on_get_state(args[0])
 			return
-		gpio=str(args[0])
+		gpio=int(args[0])
 		state=args[1]
 		if(state==""): #dans le cas ou un etat n'est pas specifie
 			state=wiringpi.digitalRead(gpio)
@@ -50,7 +50,7 @@ class RelayNamespace(BaseNamespace):
 		#TODO prendre en compte le cas ou il n'y a pas détat spécifié
 		
 	def on_get_state(self, *args):
-		gpio=str(args[0])
+		gpio=int(args[0])
 		if debug:
 			state=0
 		else:
@@ -68,11 +68,11 @@ class RaspiNamespace(BaseNamespace):
 			return
 
 
-if debug:
-	logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
-	logging.basicConfig()
+#if debug:
+logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
+logging.basicConfig()
 
-socketIO = SocketIO('localhost', 5000, LoggingNamespace)
+socketIO = SocketIO('https://192.168.1.78', 5000, LoggingNamespace, verify=False)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
