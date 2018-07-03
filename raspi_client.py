@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # coding: utf-8
 
+import os
 import time
 from enum import Enum
 from socketIO_client import SocketIO, BaseNamespace, LoggingNamespace
@@ -59,7 +60,7 @@ class RelayNamespace(BaseNamespace):
 	
 class RaspiNamespace(BaseNamespace):
 	def on_shutdown(self, *args):
-		print('shudown', args)
+		print('shutdown', args)
 		if debug:
 			return
 		os.system('shutdown -h now')
@@ -74,7 +75,7 @@ class RaspiNamespace(BaseNamespace):
 logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 logging.basicConfig()
 
-socketIO = SocketIO('https://192.168.1.78', 5000, LoggingNamespace, verify=False)
+socketIO = SocketIO('https://localhost', 5000, LoggingNamespace, verify=False)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
