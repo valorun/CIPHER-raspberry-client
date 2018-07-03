@@ -62,10 +62,12 @@ class RaspiNamespace(BaseNamespace):
 		print('shudown', args)
 		if debug:
 			return
+		os.system('shutdown -h now')
 	def on_reboot(self, *args):
 		print('reboot', args)
 		if debug:
 			return
+		os.system('reboot -h now')
 
 
 #if debug:
