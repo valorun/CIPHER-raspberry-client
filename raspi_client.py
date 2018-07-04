@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # coding: utf-8
 
+import os
 import time
 from enum import Enum
 from socketIO_client import SocketIO, BaseNamespace, LoggingNamespace
@@ -38,14 +39,14 @@ class RelayNamespace(BaseNamespace):
 			return
 		gpio=int(args[0])
 		state=args[1]
-		if(state==""): #dans le cas ou un etat n'est pas specifie
+		if(state=="" ): #dans le cas ou un etat n'est pas specifie
 			state=wiringpi.digitalRead(gpio)
 			if(state==1):
 				state=0
 			else:
 				state=1
 		wiringpi.pinMode(gpio,1)
-		wiringpi.digitalWrite(gpio,state)
+		wiringpi.digitalWrite(gpio,int(state))
 		self.on_get_state(args[0])
 		#TODO prendre en compte le cas ou il n'y a pas détat spécifié
 		
@@ -59,7 +60,7 @@ class RelayNamespace(BaseNamespace):
 	
 class RaspiNamespace(BaseNamespace):
 	def on_shutdown(self, *args):
-		print('shudown', args)
+		print('shutdown', args)
 		if debug:
 			return
 		os.system('shutdown -h now')
