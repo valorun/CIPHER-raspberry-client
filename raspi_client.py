@@ -48,15 +48,23 @@ class RelayNamespace(BaseNamespace):
 		wiringpi.pinMode(gpio,1)
 		wiringpi.digitalWrite(gpio,int(state))
 		self.on_get_state(args[0])
-		#TODO prendre en compte le cas ou il n'y a pas détat spécifié
 		
-	def on_get_state(self, *args):
+	#lorsqu'on demande de mettre à jour l'état d'un pin
+	def on_update_state(self, *args):
 		gpio=int(args[0])
 		if debug:
 			state=0
 		else:
 			state=wiringpi.digitalRead(gpio)
 		self.emit('update_state', gpio, state)
+	#lorque le serveur souhaite récupérer l'état d'un pin
+	def on_get_state(self, *args):
+		gpio=int(args[0])
+		if debug:
+			state=0
+		else:
+			state=wiringpi.digitalRead(gpio)
+		self.emit('get_state', gpio, state)
 	
 class RaspiNamespace(BaseNamespace):
 	def on_shutdown(self, *args):
