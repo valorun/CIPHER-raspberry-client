@@ -24,6 +24,13 @@ class MotionNamespace(BaseNamespace):
 		m2Speed = args[0].split(",")[1]
 		wiringpi.serialPuts(serial,'M1: '+ m1Speed +'\r\n')
 		wiringpi.serialPuts(serial,'M2: '+ m2Speed +'\r\n')
+	def on_stop(self, *args):
+		if debug:
+			return
+		if(ActionType.MOTION in CLIENT_MODES):
+			wiringpi.serialPuts(serial,'M1: 0\r\n')
+			wiringpi.serialPuts(serial,'M2: 0\r\n')
+
 class ServoNamespace(BaseNamespace):
 	def on_command(self, *args):
 		print('servo', args)
@@ -48,19 +55,19 @@ class RelayNamespace(BaseNamespace):
 		wiringpi.pinMode(gpio,1)
 		wiringpi.digitalWrite(gpio,int(state))
 		self.on_update_state(args[0])
-		
+
 	#lorque qu'il s'agit d'un relai appairé
 	def on_activate_paired_relay(self, *args):
 		print('relay', args)
 		gpio=int(args[0])
 		state=args[1]
 		peers=args[2]
-		
+
 		for peer in peers:
 			if(not debug and wiringpi.digitalRead(int(peer))==1):
 				return
 		self.on_activate_relay(args[0], args[1])
-		
+
 	def on_update_state(self, *args):
 		gpio=int(args[0])
 		if debug:
@@ -84,15 +91,15 @@ class RaspiNamespace(BaseNamespace):
 #arret automatique des relais et des moteurs en cas de deconnexion
 def on_disconnect():
 	print('Disconnected from server')
+	if debug:
+		return
 	if(ActionType.MOTION in CLIENT_MODES):
-		if debug:
-			return
 		wiringpi.serialPuts(serial,'M1: 0\r\n')
 		wiringpi.serialPuts(serial,'M2: 0\r\n')
 	if(ActionType.RELAY in CLIENT_MODES):
 		for gpio in range(2, 27):
 			wiringpi.digitalWrite(gpio,0)
-				
+
 
 
 #if debug:
