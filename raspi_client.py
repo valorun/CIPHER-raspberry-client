@@ -12,7 +12,7 @@ class ActionType(Enum): # differents types d'actions pris en charge par les rasp
 	SERVO=2
 	RELAY=3
 
-debug=False
+debug=True
 CLIENT_MODES=[ActionType.MOTION, ActionType.RELAY]
 
 class MotionNamespace(BaseNamespace):
@@ -32,10 +32,10 @@ class ServoNamespace(BaseNamespace):
 		servo.runScriptSub(int(args[0]))
 
 class RelayNamespace(BaseNamespace):
-	def on_command(self, *args):
+	def on_activate_relay(self, *args):
 		print('relay', args)
 		if debug:
-			self.on_get_state(args[0])
+			self.on_update_state(args[0])
 			return
 		gpio=int(args[0])
 		state=args[1]
@@ -47,24 +47,28 @@ class RelayNamespace(BaseNamespace):
 				state=1
 		wiringpi.pinMode(gpio,1)
 		wiringpi.digitalWrite(gpio,int(state))
-		self.on_get_state(args[0])
+		self.on_update_state(args[0])
 		
-	#lorsqu'on demande de mettre à jour l'état d'un pin
+	#lorque qu'il s'agit d'un relai appairé
+	def on_activate_paired_relay(self, *args):
+		print('relay', args)
+		gpio=int(args[0])
+		state=args[1]
+		peers=args[2]
+		
+		for peer in peers:
+			print(peer)
+			if(not debug and wiringpi.digitalRead(int(peer))==1):
+				return
+		self.on_activate_relay(args[0], args[1])
+		
 	def on_update_state(self, *args):
 		gpio=int(args[0])
 		if debug:
-			state=0
+			state=1
 		else:
 			state=wiringpi.digitalRead(gpio)
-		self.emit('update_state', gpio, state)
-	#lorque le serveur souhaite récupérer l'état d'un pin
-	def on_get_state(self, *args):
-		gpio=int(args[0])
-		if debug:
-			state=0
-		else:
-			state=wiringpi.digitalRead(gpio)
-		self.emit('get_state', gpio, state)
+		self.emit('update_state_for_client', gpio, state)
 	
 class RaspiNamespace(BaseNamespace):
 	def on_shutdown(self, *args):
@@ -83,7 +87,8 @@ class RaspiNamespace(BaseNamespace):
 logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 logging.basicConfig()
 
-socketIO = SocketIO('https://192.168.1.78', 5000, LoggingNamespace, verify=False)
+#socketIO = SocketIO('https://192.168.1.78', 5000, LoggingNamespace, verify=False)
+socketIO = SocketIO('http://localhost', 5000, LoggingNamespace)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
