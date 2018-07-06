@@ -12,8 +12,8 @@ class ActionType(Enum): # differents types d'actions pris en charge par les rasp
 	SERVO=2
 	RELAY=3
 
-debug=True
-CLIENT_MODES=[ActionType.MOTION, ActionType.RELAY]
+debug=False
+CLIENT_MODES=[ActionType.RELAY]
 
 class MotionNamespace(BaseNamespace):
 	def on_command(self, *args):
@@ -57,7 +57,6 @@ class RelayNamespace(BaseNamespace):
 		peers=args[2]
 		
 		for peer in peers:
-			print(peer)
 			if(not debug and wiringpi.digitalRead(int(peer))==1):
 				return
 		self.on_activate_relay(args[0], args[1])
@@ -69,7 +68,7 @@ class RelayNamespace(BaseNamespace):
 		else:
 			state=wiringpi.digitalRead(gpio)
 		self.emit('update_state_for_client', gpio, state)
-	
+
 class RaspiNamespace(BaseNamespace):
 	def on_shutdown(self, *args):
 		print('shutdown', args)
@@ -82,13 +81,27 @@ class RaspiNamespace(BaseNamespace):
 			return
 		os.system('reboot -h now')
 
+#arret automatique des relais et des moteurs en cas de deconnexion
+def on_disconnect():
+	print('Disconnected from server')
+	if(ActionType.MOTION in CLIENT_MODES):
+		if debug:
+			return
+		wiringpi.serialPuts(serial,'M1: 0\r\n')
+		wiringpi.serialPuts(serial,'M2: 0\r\n')
+	if(ActionType.RELAY in CLIENT_MODES):
+		for gpio in range(2, 27):
+			wiringpi.digitalWrite(gpio,0)
+				
+
 
 #if debug:
 logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 logging.basicConfig()
 
 #socketIO = SocketIO('https://192.168.1.78', 5000, LoggingNamespace, verify=False)
-socketIO = SocketIO('http://localhost', 5000, LoggingNamespace)
+socketIO = SocketIO('http://192.168.1.20', 5000, LoggingNamespace)
+socketIO.on('disconnect', on_disconnect)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
