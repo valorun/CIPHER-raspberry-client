@@ -13,7 +13,7 @@ class ActionType(Enum): # differents types d'actions pris en charge par les rasp
 	RELAY=3
 
 debug=False
-CLIENT_MODES=[ActionType.RELAY]
+CLIENT_MODES=[ActionType.SERVO]
 
 class MotionNamespace(BaseNamespace):
 	def on_command(self, *args):
@@ -106,8 +106,8 @@ def on_disconnect():
 logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 logging.basicConfig()
 
-#socketIO = SocketIO('https://192.168.1.78', 5000, LoggingNamespace, verify=False)
-socketIO = SocketIO('http://192.168.1.20', 5000, LoggingNamespace)
+socketIO = SocketIO('https://localhost', 5000, LoggingNamespace, verify=False)
+#socketIO = SocketIO('http://192.168.1.20', 5000, LoggingNamespace)
 socketIO.on('disconnect', on_disconnect)
 
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
