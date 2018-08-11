@@ -12,8 +12,8 @@ class ActionType(Enum): # differents types d'actions pris en charge par les rasp
 	SERVO=2
 	RELAY=3
 
-debug=False
-CLIENT_MODES=[]
+debug=True
+CLIENT_MODES=[ActionType.RELAY] # liste de toutes les actions prises en charge par le client
 
 class MotionNamespace(BaseNamespace):
 	def on_command(self, *args):
@@ -59,6 +59,9 @@ class RelayNamespace(BaseNamespace):
 	#lorque qu'il s'agit d'un relai appairé
 	def on_activate_paired_relay(self, *args):
 		print('relay', args)
+		if debug:
+			self.on_update_state(args[0])
+			return
 		gpio=int(args[0])
 		state=args[1]
 		peers=args[2]
@@ -69,11 +72,11 @@ class RelayNamespace(BaseNamespace):
 		self.on_activate_relay(args[0], args[1])
 
 	def on_update_state(self, *args):
-		gpio=int(args[0])
+		gpio=args[0]
 		if debug:
 			state=1
 		else:
-			state=wiringpi.digitalRead(gpio)
+			state=wiringpi.digitalRead(int(gpio))
 		self.emit('update_state_for_client', gpio, state)
 
 class RaspiNamespace(BaseNamespace):
