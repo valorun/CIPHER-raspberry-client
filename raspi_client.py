@@ -6,14 +6,14 @@ import time
 from enum import Enum
 from socketIO_client import SocketIO, BaseNamespace, LoggingNamespace
 import logging
+import json
 
-class ActionType(Enum): # differents types d'actions pris en charge par les rasperries
-	MOTION=1
-	SERVO=2
-	RELAY=3
+
+RELAY_MODE=True
+MOTION_MODE=False
+SERVO_MODE=False # differents types d'actions pris en charge par les rasperries
 
 debug=True
-CLIENT_MODES=[ActionType.RELAY] # liste de toutes les actions prises en charge par le client
 
 class MotionNamespace(BaseNamespace):
 	def on_command(self, *args):
@@ -27,9 +27,8 @@ class MotionNamespace(BaseNamespace):
 	def on_stop(self, *args):
 		if debug:
 			return
-		if(ActionType.MOTION in CLIENT_MODES):
-			wiringpi.serialPuts(serial,'M1: 0\r\n')
-			wiringpi.serialPuts(serial,'M2: 0\r\n')
+		wiringpi.serialPuts(serial,'M1: 0\r\n')
+		wiringpi.serialPuts(serial,'M2: 0\r\n')
 
 class ServoNamespace(BaseNamespace):
 	def on_command(self, *args):
@@ -85,21 +84,30 @@ class RaspiNamespace(BaseNamespace):
 		if debug:
 			return
 		os.system('shutdown -h now')
+		
 	def on_reboot(self, *args):
 		print('reboot', args)
 		if debug:
 			return
 		os.system('reboot -h now')
+		
+	def on_connect(self):
+		self.emit('raspi_connect', RELAY_MODE, MOTION_MODE, SERVO_MODE)
+		
+	def on_reconnect(self):
+		self.emit('raspi_connect', RELAY_MODE, MOTION_MODE, SERVO_MODE)
+	
 
 #arret automatique des relais et des moteurs en cas de deconnexion
 def on_disconnect():
 	print('Disconnected from server')
+	raspi_namespace.emit('disconnect')
 	if debug:
 		return
-	if(ActionType.MOTION in CLIENT_MODES):
+	if(MOTION_MODE):
 		wiringpi.serialPuts(serial,'M1: 0\r\n')
 		wiringpi.serialPuts(serial,'M2: 0\r\n')
-	if(ActionType.RELAY in CLIENT_MODES):
+	if(RELAY_MODE):
 		for gpio in range(2, 27):
 			wiringpi.digitalWrite(gpio,0)
 
@@ -114,20 +122,22 @@ socketIO = SocketIO('http://localhost', 5000, LoggingNamespace, verify=False)
 
 socketIO.on('disconnect', on_disconnect)
 
+
 raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
 
-if(ActionType.MOTION in CLIENT_MODES):
+
+if(MOTION_MODE):
 	motion_namespace = socketIO.define(MotionNamespace, '/motion')
 	if not debug:
 		import wiringpi, sys
 		wiringpi.wiringPiSetup()
 		serial = wiringpi.serialOpen('/dev/serial0',9600)
-if(ActionType.SERVO in CLIENT_MODES):
+if(SERVO_MODE):
 	servo_namespace = socketIO.define(ServoNamespace, '/servo')
 	if not debug:
 		import maestro
 		servo = maestro.Controller()
-if(ActionType.RELAY in CLIENT_MODES):
+if(RELAY_MODE):
 	relay_namespace = socketIO.define(RelayNamespace, '/relay')
 	if not debug:
 		import wiringpi
