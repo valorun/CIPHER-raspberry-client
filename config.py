@@ -1,0 +1,9 @@
+RASPBERRY_ID="relay"
+SERVER_ADDRESS="http://localhost"
+SERVER_PORT=5000 # default is 5000
+
+RELAY_MODE=True
+MOTION_MODE=False
+SERVO_MODE=False
+
+DEBUG=True
