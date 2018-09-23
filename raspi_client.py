@@ -71,7 +71,7 @@ class RelayNamespace(BaseNamespace):
 		for peer in peers:
 			if(not config.DEBUG and wiringpi.digitalRead(int(peer))==1):
 				return
-		self.on_activate_relay(args[0], args[1])
+		self.on_activate_relay(args[0], state, raspi_id)
 
 	def on_update_state(self, *args):
 		gpio=args[0]
