@@ -142,7 +142,7 @@ def create_client():
 	return socketIO
 
 def setup_logger():
-	file_handler = RotatingFileHandler('client.log', maxBytes=1000)
+	file_handler = RotatingFileHandler(os.path.join(os.path.dirname(__file__),"app.log"), maxBytes=1000)
 	formatter = logging.Formatter("%(asctime)s -- %(name)s -- %(levelname)s -- %(message)s")
 	file_handler.setFormatter(formatter)
 	root_logger=logging.getLogger()
