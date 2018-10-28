@@ -67,15 +67,20 @@ enable_mode "SERVO_MODE"
 ### add to startup ###
 if [ -e /etc/rc.local ]
 then
-    while true; do
-        read -p "Do you wish to add this program on startup ? " yn
-        case $yn in
-            [Yy]* ) sed -i -e "\$i \\sudo python3 $APP_PATH/app.py &\\n" /etc/rc.local; break;;
-            #[Yy]* ) sed -i -e "\$i \\sudo python3 $APP_PATH/app.py &\\n" ./test; break;;
-            [Nn]* ) exit;;
-            * ) echo "Please answer yes or no.";;
-        esac
-    done
+    if grep -q "sudo python3 $APP_PATH/app.py &" /etc/rc.local
+    then
+        echo "Program already added on startup."
+    else
+        while true; do
+            read -p "Do you wish to add this program on startup ? " yn
+            case $yn in
+                [Yy]* ) sed -i -e "\$i \\sudo python3 $APP_PATH/app.py &\\n" /etc/rc.local; break;;
+                #[Yy]* ) sed -i -e "\$i \\sudo python3 $APP_PATH/app.py &\\n" ./test; break;;
+                [Nn]* ) exit;;
+                * ) echo "Please answer yes or no.";;
+            esac
+        done
+    fi
 else
     echo "No rc.local file found, can't add program on startup."
 fi
