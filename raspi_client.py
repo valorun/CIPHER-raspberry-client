@@ -40,13 +40,13 @@ def create_client():
 			state=args[1]
 			raspi_id=args[2]
 			
-			if raspi_id != config.RASPBERRY_ID: #on vérifie que la requete est bien destinée à ce raspberry
+			if raspi_id != config.RASPBERRY_ID: #check if the request is intended for this raspberry
 				return
 			logging.info('relay ACTIVATED')
 			if config.DEBUG:
 				self.on_update_state(args[0])
 				return
-			if(state=="" ): #dans le cas ou un etat n'est pas specifie
+			if(state=="" ): #in the case where a state is not specified
 				state=wiringpi.digitalRead(gpio)
 				if(state==1):
 					state=0
@@ -56,13 +56,15 @@ def create_client():
 			wiringpi.digitalWrite(gpio,int(state))
 			self.on_update_state(args[0])
 
-		#lorsque qu'il s'agit d'un relai appairé
 		def on_activate_paired_relay(self, *args):
+			"""
+			Function called for activating a paired relay.
+			"""
 			logging.info('relay'+str(args))
 			if config.DEBUG:
 				self.on_update_state(args[0])
 				return
-			gpio=int(args[0])
+			gpio=args[0]
 			state=args[1]
 			peers=args[2]
 			raspi_id=args[3]
@@ -72,7 +74,7 @@ def create_client():
 			for peer in peers:
 				if(not config.DEBUG and wiringpi.digitalRead(int(peer))==1):
 					return
-			self.on_activate_relay(args[0], state, raspi_id)
+			self.on_activate_relay(gpio, state, raspi_id)
 
 		def on_update_state(self, *args):
 			gpio=args[0]
@@ -102,8 +104,10 @@ def create_client():
 			self.emit('raspi_connect', config.RASPBERRY_ID, config.RELAY_MODE, config.MOTION_MODE, config.SERVO_MODE)
 		
 
-	#arret automatique des relais et des moteurs en cas de deconnexion
 	def on_disconnect():
+		"""
+		Automatically disable relays and motors on disconnect.
+		"""
 		logging.info('Disconnected from server')
 		raspi_namespace.emit('disconnect')
 		if config.DEBUG:
