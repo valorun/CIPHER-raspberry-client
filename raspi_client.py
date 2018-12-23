@@ -120,11 +120,10 @@ def create_client():
 				wiringpi.digitalWrite(gpio,0)
 
 	socketIO = SocketIO(config.SERVER_ADDRESS, config.SERVER_PORT, LoggingNamespace, verify=False)
-	#socketIO = SocketIO('http://192.168.1.20', 5000, LoggingNamespace, verify=False)
-
-	socketIO.on('disconnect', on_disconnect)
 
 	raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
+
+	socketIO.on('disconnect', on_disconnect)
 
 	if(config.MOTION_MODE):
 		motion_namespace = socketIO.define(MotionNamespace, '/motion')
