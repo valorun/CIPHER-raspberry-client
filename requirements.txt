@@ -1,3 +1,4 @@
 socketIO-client
 wiringpi
 pyserial
+paho-mqtt

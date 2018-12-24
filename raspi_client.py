@@ -3,146 +3,167 @@
 
 import os
 import time
-from enum import Enum
-from socketIO_client import SocketIO, BaseNamespace, LoggingNamespace
 import logging
 from logging.handlers import RotatingFileHandler
 import json
 import config
+import paho.mqtt.client as mqtt
+
+
+class MotionController():
+	def __init__(self, client):
+		self.client = client
+		if not config.DEBUG:
+			import wiringpi as wp
+			self.wiringpi = wp
+			self.wiringpi.wiringPiSetup()
+			self.serial = self.wiringpi.serialOpen('/dev/serial0',9600)
+	def command(self, m1Speed, m2Speed):
+		logging.info('motion '+str(m1Speed)+", "+str(m2Speed))
+		if config.DEBUG:
+			return
+		self.wiringpi.serialPuts(self.serial,'M1: '+ m1Speed +'\r\n')
+		self.wiringpi.serialPuts(self.serial,'M2: '+ m2Speed +'\r\n')
+			
+
+class ServoController():
+	def __init__(self, client):
+		self.client = client
+		if not config.DEBUG:
+			import maestro
+			self.servo = maestro.Controller()
+
+	def command(self, index):
+		logging.info('servo '+str(index))
+		if config.DEBUG:
+			return
+		self.servo.runScriptSub(index)
+
+class RelayController():
+	def __init__(self, client):
+		self.client = client
+		if not config.DEBUG:
+			import wiringpi as wp
+			self.wiringpi = wp
+			self.wiringpi.wiringPiSetupGpio() 
+
+	def activate_relay(self, gpio, state, peers=None):
+		logging.info('relay '+str(gpio)+", "+str(state)+", "+str(peers))
+
+		#check if the peers relays aren't activated
+		if peers != None or len(peers) != 0:
+			for peer in peers:
+				if(not config.DEBUG and self.wiringpi.digitalRead(int(peer))==1):
+					return
+
+		logging.info('relay ACTIVATED')
+		if config.DEBUG:
+			self.update_state(gpio)
+			return
+		if(state=="" ): #in the case where a state is not specified
+			state=self.wiringpi.digitalRead(gpio)
+			if(state==1):
+				state=0
+			else:
+				state=1
+		self.wiringpi.pinMode(gpio,1)
+		self.wiringpi.digitalWrite(gpio, gpio)
+		self.update_state(gpio)
+
+	def update_state(self, gpio):
+		if config.DEBUG:
+			state=1
+		else:
+			state=self.wiringpi.digitalRead(gpio)
+		self.client.publish("server/update_relay", {'gpio':gpio, 'state':state})
+		#self.emit('update_state_for_client', gpio, state, config.RASPBERRY_ID)
+
+class RaspiController():
+	def __init__(self, client):
+		self.client = client
+
+	def shutdown(self):
+		logging.info('shutdown')
+		if config.DEBUG:
+			return
+		os.system('shutdown -h now')
+		
+	def reboot(self):
+		logging.info('reboot')
+		if config.DEBUG:
+			return
+		os.system('reboot -h now')
 
 def create_client():
-	class MotionNamespace(BaseNamespace):
-		def on_command(self, *args):
-			logging.info('motion'+str(args))
-			if config.DEBUG:
-				return
-			m1Speed = args[0].split(",")[0]
-			m2Speed = args[0].split(",")[1]
-			wiringpi.serialPuts(serial,'M1: '+ m1Speed +'\r\n')
-			wiringpi.serialPuts(serial,'M2: '+ m2Speed +'\r\n')
-		def on_stop(self, *args):
-			if config.DEBUG:
-				return
-			wiringpi.serialPuts(serial,'M1: 0\r\n')
-			wiringpi.serialPuts(serial,'M2: 0\r\n')
 
-	class ServoNamespace(BaseNamespace):
-		def on_command(self, *args):
-			logging.info('servo'+str(args))
-			if config.DEBUG:
-				return
-			servo.runScriptSub(int(args[0]))
+	client = mqtt.Client(config.RASPBERRY_ID)
+	client.on_connect = on_connect
+	client.on_message = on_message
+	client.on_disconnect = on_disconnect
 
-	class RelayNamespace(BaseNamespace):
-		def on_activate_relay(self, *args):
-			logging.info('relay'+str(args))
-			gpio=int(args[0])
-			state=args[1]
-			raspi_id=args[2]
-			
-			if raspi_id != config.RASPBERRY_ID: #check if the request is intended for this raspberry
-				return
-			logging.info('relay ACTIVATED')
-			if config.DEBUG:
-				self.on_update_state(args[0])
-				return
-			if(state=="" ): #in the case where a state is not specified
-				state=wiringpi.digitalRead(gpio)
-				if(state==1):
-					state=0
-				else:
-					state=1
-			wiringpi.pinMode(gpio,1)
-			wiringpi.digitalWrite(gpio,int(state))
-			self.on_update_state(args[0])
+	if config.DEBUG:
+		client.on_log = on_log
 
-		def on_activate_paired_relay(self, *args):
-			"""
-			Function called for activating a paired relay.
-			"""
-			logging.info('relay'+str(args))
-			if config.DEBUG:
-				self.on_update_state(args[0])
-				return
-			gpio=args[0]
-			state=args[1]
-			peers=args[2]
-			raspi_id=args[3]
-			if raspi_id != config.RASPBERRY_ID:
-				return
+	raspi = RaspiController(client)
+	motion = None
+	relay = None
+	servo = None
 
-			for peer in peers:
-				if(not config.DEBUG and wiringpi.digitalRead(int(peer))==1):
-					return
-			self.on_activate_relay(gpio, state, raspi_id)
-
-		def on_update_state(self, *args):
-			gpio=args[0]
-			if config.DEBUG:
-				state=1
-			else:
-				state=wiringpi.digitalRead(int(gpio))
-			self.emit('update_state_for_client', gpio, state, config.RASPBERRY_ID)
-
-	class RaspiNamespace(BaseNamespace):
-		def on_shutdown(self, *args):
-			logging.info('shutdown'+str(args))
-			if config.DEBUG:
-				return
-			os.system('shutdown -h now')
-			
-		def on_reboot(self, *args):
-			logging.info('reboot'+str(args))
-			if config.DEBUG:
-				return
-			os.system('reboot -h now')
-			
-		def on_connect(self):
-			self.emit('raspi_connect', config.RASPBERRY_ID, config.RELAY_MODE, config.MOTION_MODE, config.SERVO_MODE)
-			
-		def on_reconnect(self):
-			self.emit('raspi_connect', config.RASPBERRY_ID, config.RELAY_MODE, config.MOTION_MODE, config.SERVO_MODE)
-		
+	client.connect(config.SERVER_ADDRESS, config.SERVER_PORT, 60)
 
 	def on_disconnect():
 		"""
 		Automatically disable relays and motors on disconnect.
 		"""
-		logging.info('Disconnected from server')
-		raspi_namespace.emit('disconnect')
-		if config.DEBUG:
-			return
-		if(config.MOTION_MODE):
-			wiringpi.serialPuts(serial,'M1: 0\r\n')
-			wiringpi.serialPuts(serial,'M2: 0\r\n')
-		if(config.RELAY_MODE):
+		client.publish("server/raspi_disconnect", {'id':config.RASPBERRY_ID})
+		if(motion != None):
+			motion.command(0, 0)
+		if(relay != None):
 			for gpio in range(2, 27):
-				wiringpi.digitalWrite(gpio,0)
+				relay.activate_relay(gpio, 0)
+		logging.info('Disconnected from server')
 
-	socketIO = SocketIO(config.SERVER_ADDRESS, config.SERVER_PORT, LoggingNamespace, verify=False)
+	def on_connect(client, userdata, flags, rc):
+		"""
+		Function called when the client connect to the server.
+		"""
+		print("Connected with result code "+str(rc))
+		client.publish("server/raspi_connect", {'id':config.RASPBERRY_ID, 'address':config.SERVER_ADDRESS})
+		client.subscribe("raspi")
+		client.subscribe("raspi/"+config.RASPBERRY_ID+"/#")
 
-	raspi_namespace = socketIO.define(RaspiNamespace, '/raspi')
+	def on_message(client, userdata, msg):
+		"""
+		Function called when a message is received from the server.
+		"""
+		topic = msg.topic
+		data = msg.payload
+		if topic == "raspi/shutdown":
+			raspi.shutdown()
+		elif topic == "raspi/reboot":
+			raspi.reboot()
+		elif topic == "raspi/"+config.RASPBERRY_ID+"/motion":
+			if motion == None:
+				motion = MotionController(client) 
+			motion.command(data['m1'], data['m2'])
+		elif topic == "raspi/"+config.RASPBERRY_ID+"/servo":
+			if servo == None:
+				servo = ServoController(client)
+			servo.command(data['index'])
+		elif topic == "raspi/"+config.RASPBERRY_ID+"/relay/activate":
+			if relay == None:
+				relay = RelayController(client)
+			relay.activate_relay(data['gpio'], data['state'], data['peers'])
+		elif topic == "raspi/"+config.RASPBERRY_ID+"/relay/update_state":
+			if relay == None:
+				relay = RelayController(client)
+			relay.update_state(data['gpio'])
+		print(topic+" "+str(data))
 
-	socketIO.on('disconnect', on_disconnect)
+	def on_log(mqttc, obj, level, string):
+		print(string)
 
-	if(config.MOTION_MODE):
-		motion_namespace = socketIO.define(MotionNamespace, '/motion')
-		if not config.DEBUG:
-			import wiringpi, sys
-			wiringpi.wiringPiSetup()
-			serial = wiringpi.serialOpen('/dev/serial0',9600)
-	if(config.SERVO_MODE):
-		servo_namespace = socketIO.define(ServoNamespace, '/servo')
-		if not config.DEBUG:
-			import maestro
-			servo = maestro.Controller()
-	if(config.RELAY_MODE):
-		relay_namespace = socketIO.define(RelayNamespace, '/relay')
-		if not config.DEBUG:
-			import wiringpi
-			wiringpi.wiringPiSetupGpio() 
-
-	return socketIO
+	return client
 
 def setup_logger():
 	file_handler = RotatingFileHandler(os.path.join(os.path.dirname(__file__),"app.log"), maxBytes=1000)
