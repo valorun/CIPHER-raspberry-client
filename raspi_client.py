@@ -120,7 +120,7 @@ def create_client():
 		Function called when the client connect to the server.
 		"""
 		print("Connected with result code "+str(rc))
-		client.publish("server/raspi_connect", {'id':config.RASPBERRY_ID, 'address':config.SERVER_ADDRESS})
+		client.publish("server/raspi_connect", {'id':config.RASPBERRY_ID})
 		client.subscribe("raspi")
 		client.subscribe("raspi/"+config.RASPBERRY_ID+"/#")
 
@@ -161,7 +161,7 @@ def create_client():
 	client.on_message = on_message
 	client.on_disconnect = on_disconnect
 
-	client.connect(config.SERVER_ADDRESS, config.SERVER_PORT, 60)
+	client.connect(config.MQTT_BROKER_URL, config.MQTT_BROKER_PORT, 60)
 
 	return client
 
