@@ -98,9 +98,6 @@ def create_client():
 
 	client = mqtt.Client(config.RASPBERRY_ID)
 
-	if config.DEBUG:
-		client.on_log = on_log
-
 	raspi = RaspiController(client)
 	motion = None
 	relay = None
@@ -158,6 +155,8 @@ def create_client():
 	def on_log(mqttc, obj, level, string):
 		print(string)
 	
+	if config.DEBUG:
+		client.on_log = on_log
 	client.on_connect = on_connect
 	client.on_message = on_message
 	client.on_disconnect = on_disconnect
