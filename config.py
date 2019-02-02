@@ -1,4 +1,4 @@
-RASPBERRY_ID="relay"
+RASPBERRY_ID="test"
 MQTT_BROKER_URL="localhost"
 MQTT_BROKER_PORT=1883 # default is 1883
 

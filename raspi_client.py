@@ -7,7 +7,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import json
 import config
-import paho.mqtt.client as mqtt
+import paho.mqtt.client as Mqtt
 
 
 class MotionController():
@@ -49,9 +49,8 @@ class RelayController():
 
 	def activate_relay(self, gpio, state, peers=None):
 		logging.info('relay '+str(gpio)+", "+str(state)+", "+str(peers))
-
 		#check if the peers relays aren't activated
-		if peers != None or len(peers) != 0:
+		if peers != None and len(peers) != 0:
 			for peer in peers:
 				if(not config.DEBUG and self.wiringpi.digitalRead(int(peer))==1):
 					return
@@ -75,7 +74,7 @@ class RelayController():
 			state=1
 		else:
 			state=self.wiringpi.digitalRead(gpio)
-		self.client.publish("server/update_relay", {'gpio':gpio, 'state':state})
+		self.client.publish("server/update_relay", json.dumps({'gpio':gpio, 'state':state}))
 		#self.emit('update_state_for_client', gpio, state, config.RASPBERRY_ID)
 
 class RaspiController():
@@ -94,20 +93,26 @@ class RaspiController():
 			return
 		os.system('reboot -h now')
 
+mqtt = None
+
+raspi = None
+motion = None
+relay = None
+servo = None
+
 def create_client():
+	global mqtt, raspi
 
-	client = mqtt.Client(config.RASPBERRY_ID)
+	mqtt = Mqtt.Client(config.RASPBERRY_ID)
 
-	raspi = RaspiController(client)
-	motion = None
-	relay = None
-	servo = None
+	raspi = RaspiController(mqtt)
 
 	def on_disconnect():
 		"""
 		Automatically disable relays and motors on disconnect.
 		"""
-		client.publish("server/raspi_disconnect", {'id':config.RASPBERRY_ID})
+		global relay, motion
+		mqtt.publish("server/raspi_disconnect", json.dumps({'id':config.RASPBERRY_ID}))
 		if(motion != None):
 			motion.command(0, 0)
 		if(relay != None):
@@ -120,50 +125,65 @@ def create_client():
 		Function called when the client connect to the server.
 		"""
 		print("Connected with result code "+str(rc))
-		client.publish("server/raspi_connect", {'id':config.RASPBERRY_ID})
-		client.subscribe("raspi")
-		client.subscribe("raspi/"+config.RASPBERRY_ID+"/#")
+		notify_server_connection()
+		mqtt.subscribe("server/connect")
+		mqtt.subscribe("raspi/shutdown")
+		mqtt.subscribe("raspi/reboot")
+		mqtt.subscribe("raspi/"+config.RASPBERRY_ID+"/#")
+
+	def notify_server_connection():
+		"""
+		Give all information about the connected raspberry to the server when needed.
+		"""
+		mqtt.publish("server/raspi_connect", json.dumps({'id':config.RASPBERRY_ID}))
 
 	def on_message(client, userdata, msg):
 		"""
 		Function called when a message is received from the server.
 		"""
+		global motion, relay, servo
 		topic = msg.topic
-		data = msg.payload
+		try:
+			data = json.loads(msg.payload)
+		except ValueError:
+			data = msg.payload
 		if topic == "raspi/shutdown":
 			raspi.shutdown()
 		elif topic == "raspi/reboot":
 			raspi.reboot()
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/motion":
 			if motion == None:
-				motion = MotionController(client) 
+				motion = MotionController(mqtt) 
 			motion.command(data['m1'], data['m2'])
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/servo":
 			if servo == None:
-				servo = ServoController(client)
+				servo = ServoController(mqtt)
 			servo.command(data['index'])
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/relay/activate":
 			if relay == None:
-				relay = RelayController(client)
+				relay = RelayController(mqtt)
 			relay.activate_relay(data['gpio'], data['state'], data['peers'])
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/relay/update_state":
 			if relay == None:
-				relay = RelayController(client)
+				relay = RelayController(mqtt)
 			relay.update_state(data['gpio'])
+		elif topic == "server/connect": #when the server start or restart, notify it this raspberry is connected
+			notify_server_connection()
 		print(topic+" "+str(data))
 
 	def on_log(mqttc, obj, level, string):
 		print(string)
 	
 	if config.DEBUG:
-		client.on_log = on_log
-	client.on_connect = on_connect
-	client.on_message = on_message
-	client.on_disconnect = on_disconnect
+		mqtt.on_log = on_log
+	mqtt.on_connect = on_connect
+	mqtt.on_message = on_message
+	mqtt.on_disconnect = on_disconnect
+	mqtt.will_set("server/raspi_disconnect", json.dumps({'id':config.RASPBERRY_ID}))
 
-	client.connect(config.MQTT_BROKER_URL, config.MQTT_BROKER_PORT, 60)
+	mqtt.connect(config.MQTT_BROKER_URL, config.MQTT_BROKER_PORT, 60)
 
-	return client
+	return mqtt
 
 def setup_logger():
 	file_handler = RotatingFileHandler(os.path.join(os.path.dirname(__file__),"app.log"), maxBytes=1000)
