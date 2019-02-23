@@ -53,6 +53,7 @@ class RelayController():
 					return
 
 		logging.info('relay ACTIVATED')
+		gpio = int(gpio)
 		if config.DEBUG:
 			self.update_state(gpio)
 			return
@@ -67,6 +68,7 @@ class RelayController():
 		self.update_state(gpio)
 
 	def update_state(self, gpio):
+		gpio = int(gpio)
 		if config.DEBUG:
 			state=1
 		else:
