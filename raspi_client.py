@@ -104,7 +104,7 @@ def create_client():
 
 	raspi = RaspiController(mqtt)
 
-	def on_disconnect():
+	def on_disconnect(client, userdata, rc):
 		"""
 		Automatically disable relays and motors on disconnect.
 		"""
@@ -141,9 +141,9 @@ def create_client():
 		global motion, relay, servo
 		topic = msg.topic
 		try:
-			data = json.loads(msg.payload)
+			data = json.loads(msg.payload.decode('utf-8'))
 		except ValueError:
-			data = msg.payload
+			data = msg.payload.decode('utf-8')
 		if topic == "raspi/shutdown":
 			raspi.shutdown()
 		elif topic == "raspi/reboot":
