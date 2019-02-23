@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# coding: utf-8
-
 import os
 import time
 import logging
@@ -124,7 +121,7 @@ def create_client():
 		"""
 		Function called when the client connect to the server.
 		"""
-		print("Connected with result code "+str(rc))
+		logging.info("Connected with result code "+str(rc))
 		notify_server_connection()
 		mqtt.subscribe("server/connect")
 		mqtt.subscribe("raspi/shutdown")
@@ -169,26 +166,28 @@ def create_client():
 			relay.update_state(data['gpio'])
 		elif topic == "server/connect": #when the server start or restart, notify it this raspberry is connected
 			notify_server_connection()
-		print(topic+" "+str(data))
-
-	def on_log(mqttc, obj, level, string):
-		print(string)
+		logging.info(topic+" "+str(data))
 	
-	if config.DEBUG:
-		mqtt.on_log = on_log
 	mqtt.on_connect = on_connect
 	mqtt.on_message = on_message
 	mqtt.on_disconnect = on_disconnect
+	mqtt.enable_logger()
 	mqtt.will_set("server/raspi_disconnect", json.dumps({'id':config.RASPBERRY_ID}))
 
 	mqtt.connect(config.MQTT_BROKER_URL, config.MQTT_BROKER_PORT, 60)
 
 	return mqtt
 
-def setup_logger():
-	file_handler = RotatingFileHandler(os.path.join(os.path.dirname(__file__),"app.log"), maxBytes=1000)
+def setup_logger(debug=False):
+	if debug:
+		log_level = 'DEBUG'
+	else:
+		log_level = 'INFO'
+	file_handler = RotatingFileHandler(os.path.join(os.path.dirname(__file__),"app.log"), maxBytes=1024)
 	formatter = logging.Formatter("%(asctime)s -- %(name)s -- %(levelname)s -- %(message)s")
 	file_handler.setFormatter(formatter)
 	root_logger=logging.getLogger()
 	root_logger.addHandler(file_handler)
-	root_logger.setLevel(logging.DEBUG)
+	root_logger.setLevel(log_level)
+	
+	
