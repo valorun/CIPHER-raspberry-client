@@ -44,25 +44,12 @@ config_set_var() {
     sed -i "s/^\($1\s*=\s*\).*\$/\1$2/" $CONFIG_FILE
 }
 
-enable_mode(){
-    while true; do
-        read -p "Do you wish to enable $1 ? " yn
-        case $yn in
-            [Yy]* ) config_set_var $1 "True"; break;;
-            [Nn]* ) config_set_var $1 "False"; break;;
-            * ) echo "Please answer yes or no.";;
-        esac
-    done
-}
 read -p "Raspberry id: " id
 read -p "Server address: " addr
 read -p "Server port: " port
 config_set_var "RASPBERRY_ID" "\"$id\""
 config_set_var "SERVER_ADDRESS" "\"$(echo $addr | sed -r 's/\./\\./g' | sed -r 's,/,\\/,g')\""
 config_set_var "SERVER_PORT" $port
-enable_mode "RELAY_MODE"
-enable_mode "MOTION_MODE"
-enable_mode "SERVO_MODE"
 
 ### add to startup ###
 if [ -e /etc/rc.local ]
