@@ -178,8 +178,8 @@ def create_client():
 
 	return mqtt
 
-def setup_logger(debug=False):
-	if debug:
+def setup_logger():
+	if config.DEBUG:
 		log_level = 'DEBUG'
 	else:
 		log_level = 'INFO'
