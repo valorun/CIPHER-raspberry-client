@@ -64,7 +64,7 @@ class RelayController():
 			else:
 				state=1
 		self.wiringpi.pinMode(gpio,1)
-		self.wiringpi.digitalWrite(gpio, gpio)
+		self.wiringpi.digitalWrite(gpio, state)
 		self.update_state(gpio)
 
 	def update_state(self, gpio):
@@ -73,7 +73,7 @@ class RelayController():
 			state=1
 		else:
 			state=self.wiringpi.digitalRead(gpio)
-		self.client.publish("server/update_relay", json.dumps({'gpio':gpio, 'state':state}))
+		self.client.publish("server/update_relay", json.dumps({'gpio':gpio, 'state':state, 'raspi_id':config.RASPBERRY_ID}))
 		#self.emit('update_state_for_client', gpio, state, config.RASPBERRY_ID)
 
 class RaspiController():
