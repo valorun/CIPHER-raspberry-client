@@ -65,7 +65,7 @@ class RelayController():
 				state=1
 		self.wiringpi.pinMode(gpio,1)
 		self.wiringpi.digitalWrite(gpio, state)
-		self.update_state(gpio)
+		self.update_state([gpio])
 
 	def update_state(self, gpios):
 		"""
