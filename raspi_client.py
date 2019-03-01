@@ -67,14 +67,19 @@ class RelayController():
 		self.wiringpi.digitalWrite(gpio, state)
 		self.update_state(gpio)
 
-	def update_state(self, gpio):
-		gpio = int(gpio)
-		if config.DEBUG:
-			state=1
-		else:
-			state=self.wiringpi.digitalRead(gpio)
-		self.client.publish("server/update_relay", json.dumps({'gpio':gpio, 'state':state, 'raspi_id':config.RASPBERRY_ID}))
-		#self.emit('update_state_for_client', gpio, state, config.RASPBERRY_ID)
+	def update_state(self, gpios):
+		"""
+		Send the state of all specified relays to the server
+		"""
+		relays_list = []
+		for g in gpios:
+			gpio = int(g)
+			if config.DEBUG:
+				state=1
+			else:
+				state=self.wiringpi.digitalRead(gpio)
+			relays_list.append({'gpio':gpio, 'state':state, 'raspi_id':config.RASPBERRY_ID})
+		self.client.publish("server/update_relays_state", json.dumps({'relays':relays_list}))
 
 class RaspiController():
 	def __init__(self, client):
@@ -165,7 +170,7 @@ def create_client():
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/relay/update_state":
 			if relay == None:
 				relay = RelayController(mqtt)
-			relay.update_state(data['gpio'])
+			relay.update_state(data['gpios'])
 		elif topic == "server/connect": #when the server start or restart, notify it this raspberry is connected
 			notify_server_connection()
 		logging.info(topic+" "+str(data))
