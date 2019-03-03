@@ -52,7 +52,7 @@ class RelayController():
 				if(not config.DEBUG and self.wiringpi.digitalRead(int(peer))==1):
 					return
 
-		logging.info('relay ACTIVATED')
+		logging.info('relay ' + str(gpio) + 'ACTIVATED')
 		gpio = int(gpio)
 		if config.DEBUG:
 			self.update_state(gpio)
@@ -72,6 +72,7 @@ class RelayController():
 		Send the state of all specified relays to the server
 		"""
 		relays_list = []
+		logging.info('Updating relays on server')
 		for g in gpios:
 			gpio = int(g)
 			if config.DEBUG:
@@ -171,7 +172,7 @@ def create_client():
 			if relay == None:
 				relay = RelayController(mqtt)
 			relay.update_state(data['gpios'])
-		elif topic == "server/connect": #when the server start or restart, notify it this raspberry is connected
+		elif topic == "server/connect": #when the server start or restart, notify this raspberry is connected
 			notify_server_connection()
 		logging.info(topic+" "+str(data))
 	
