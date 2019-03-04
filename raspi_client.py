@@ -15,12 +15,26 @@ class MotionController():
 			self.wiringpi = wp
 			self.wiringpi.wiringPiSetup()
 			self.serial = self.wiringpi.serialOpen('/dev/serial0',9600)
-	def command(self, m1Speed, m2Speed):
-		logging.info('motion '+str(m1Speed)+", "+str(m2Speed))
+	def command(self, direction, speed):
+		logging.info('moving '+direction+", "+str(speed))
 		if config.DEBUG:
 			return
-		self.wiringpi.serialPuts(self.serial,'M1: '+ m1Speed +'\r\n')
-		self.wiringpi.serialPuts(self.serial,'M2: '+ m2Speed +'\r\n')
+		m1Speed = 0
+		m2Speed = 0
+		if direction == "forwards":
+			m1Speed = speed
+			m2Speed = speed
+		if direction == "backwards":
+			m1Speed = -speed
+			m2Speed = -speed
+		if direction == "left":
+			m2Speed = speed
+		if direction == "right":
+			m1Speed = speed
+
+		# the speeds used by the control card are between 0 and 2047
+		self.wiringpi.serialPuts(self.serial,'M1: '+ str(int(m1Speed * 2047/100)) +'\r\n')
+		self.wiringpi.serialPuts(self.serial,'M2: '+ str(int(m2Speed * 2047/100)) +'\r\n')
 			
 
 class ServoController():
@@ -159,7 +173,7 @@ def create_client():
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/motion":
 			if motion == None:
 				motion = MotionController(mqtt) 
-			motion.command(data['m1'], data['m2'])
+			motion.command(data['direction'], data['speed'])
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/servo":
 			if servo == None:
 				servo = ServoController(mqtt)
