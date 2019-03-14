@@ -77,7 +77,7 @@ class Controller:
     # Target values will be constrained within Min and Max range, if set.
     # For servos, target represents the pulse width in of quarter-microseconds
     # Servo center is at 1500 microseconds, or 6000 quarter-microseconds
-    # Typcially valid servo range is 3000 to 9000 quarter-microseconds
+    # Typically valid servo range is 3000 to 9000 quarter-microseconds
     # If channel is configured for digital output, values < 6000 = Low ouput
     def setTarget(self, chan, target):
         # if Min is defined and Target is below, force to Min

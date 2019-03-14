@@ -44,11 +44,14 @@ class ServoController():
 			import maestro
 			self.servo = maestro.Controller()
 
-	def command(self, index):
-		logging.info('servo '+str(index))
+	def command(self, gpio, position, speed):
+		logging.info('servo ' + str(gpio) + ', position ' + str(position) + ', speed ' + str(speed) )
 		if config.DEBUG:
 			return
-		self.servo.runScriptSub(index)
+		speed = int(speed/100 * 60) #conversion to maestro speed
+		self.servo.setSpeed(int(gpio), speed)
+		position = int(position/100 * 6000) #conversion to maestro position
+		self.servo.setTarget(int(gpio), position)
 
 class RelayController():
 	def __init__(self, client):
@@ -177,7 +180,7 @@ def create_client():
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/servo":
 			if servo == None:
 				servo = ServoController(mqtt)
-			servo.command(data['index'])
+			servo.command(data['gpio'], data['position'], data['speed'])
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/relay/activate":
 			if relay == None:
 				relay = RelayController(mqtt)
