@@ -120,7 +120,7 @@ class Controller:
     # the Target parameter of setTarget.
     # This is not reading the true servo position, but the last target position sent
     # to the servo. If the Speed is set to below the top speed of the servo, then
-    # the position result will align well with the acutal servo position, assuming
+    # the position result will align well with the actual servo position, assuming
     # it is not stalled or slowed.
     def getPosition(self, chan):
         cmd = chr(0x10) + chr(chan)

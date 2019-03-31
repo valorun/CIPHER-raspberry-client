@@ -44,14 +44,20 @@ class ServoController():
 			import maestro
 			self.servo = maestro.Controller()
 
-	def command(self, gpio, position, speed):
+	def set_position(self, gpio:str, position:int, speed:int):
 		logging.info('servo ' + str(gpio) + ', position ' + str(position) + ', speed ' + str(speed) )
 		if config.DEBUG:
 			return
 		speed = int(speed/100 * 60) #conversion to maestro speed
 		self.servo.setSpeed(int(gpio), speed)
-		position = int(position/100 * 6000) #conversion to maestro position
+		position = position * 4 #conversion to maestro position (quarter micro-sec)
 		self.servo.setTarget(int(gpio), position)
+
+	def sequence(self, index:int):
+		logging.info('servo sequence ' + str(index))
+		if config.DEBUG:
+			return
+		self.servo.runScriptSub(index)
 
 class RelayController():
 	def __init__(self, client):
@@ -64,12 +70,12 @@ class RelayController():
 	def activate_relay(self, gpio, state, peers=None):
 		logging.info('relay '+str(gpio)+", "+str(state)+", "+str(peers))
 		#check if the peers relays aren't activated
-		if peers != None and len(peers) != 0:
+		if peers is not None and len(peers) != 0:
 			for peer in peers:
 				if(not config.DEBUG and self.wiringpi.digitalRead(int(peer))==1):
 					return
 
-		logging.info('relay ' + str(gpio) + 'ACTIVATED')
+		logging.info('relay ' + str(gpio) + ' ACTIVATED')
 		gpio = int(gpio)
 		if config.DEBUG:
 			self.update_state(gpio)
@@ -135,9 +141,9 @@ def create_client():
 		"""
 		global relay, motion
 		mqtt.publish("server/raspi_disconnect", json.dumps({'id':config.RASPBERRY_ID}))
-		if(motion != None):
+		if motion is not None:
 			motion.command(0, 0)
-		if(relay != None):
+		if relay is not None:
 			for gpio in range(2, 27):
 				relay.activate_relay(gpio, 0)
 		logging.info('Disconnected from server')
@@ -174,19 +180,23 @@ def create_client():
 		elif topic == "raspi/reboot":
 			raspi.reboot()
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/motion":
-			if motion == None:
+			if motion is None:
 				motion = MotionController(mqtt) 
 			motion.command(data['direction'], data['speed'])
-		elif topic == "raspi/"+config.RASPBERRY_ID+"/servo":
-			if servo == None:
+		elif topic == "raspi/"+config.RASPBERRY_ID+"/servo/set_position":
+			if servo is None:
 				servo = ServoController(mqtt)
-			servo.command(data['gpio'], data['position'], data['speed'])
+			servo.set_position(data['gpio'], data['position'], data['speed'])
+		elif topic == "raspi/"+config.RASPBERRY_ID+"/servo/sequence": #COMPATIBILITY REASON
+			if servo is None:
+				servo = ServoController(mqtt)
+			servo.sequence(data['index'])
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/relay/activate":
-			if relay == None:
+			if relay is None:
 				relay = RelayController(mqtt)
 			relay.activate_relay(data['gpio'], data['state'], data['peers'])
 		elif topic == "raspi/"+config.RASPBERRY_ID+"/relay/update_state":
-			if relay == None:
+			if relay is None:
 				relay = RelayController(mqtt)
 			relay.update_state(data['gpios'])
 		elif topic == "server/connect": #when the server start or restart, notify this raspberry is connected
