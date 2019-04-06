@@ -26,12 +26,6 @@ else
     install_program "python3-pip"
 fi
 
-if type "mplayer" &>/dev/null; then
-    echo "Mplayer found"
-else
-    echo "Mplayer not found"
-    install_program "mplayer"
-fi
 
 APP_PATH=$(cd $(dirname "$0") && pwd)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # coding: utf-8
 
-from raspi_client import create_client, setup_logger 
+from cipher_raspi_client import create_client, setup_logger 
 import logging
 
 if __name__ == '__main__':
