@@ -25,7 +25,7 @@ def create_client():
 		Automatically disable relays and motors on disconnect.
 		"""
 		global relay, motion
-		mqtt.publish("server/raspi_disconnect", json.dumps({'id':RASPBERRY_ID}))
+		mqtt.publish('server/raspi_disconnect', json.dumps({'id':RASPBERRY_ID}))
 		if motion is not None:
 			motion.command(0, 0)
 		if relay is not None:
@@ -37,18 +37,18 @@ def create_client():
 		"""
 		Function called when the client connect to the server.
 		"""
-		logging.info("Connected with result code "+str(rc))
+		logging.info('Connected with result code ' + str(rc))
 		notify_server_connection()
-		mqtt.subscribe("server/connect")
-		mqtt.subscribe("raspi/shutdown")
-		mqtt.subscribe("raspi/reboot")
-		mqtt.subscribe("raspi/"+RASPBERRY_ID+"/#")
+		mqtt.subscribe('server/connect')
+		mqtt.subscribe('raspi/shutdown')
+		mqtt.subscribe('raspi/reboot')
+		mqtt.subscribe('raspi/' + RASPBERRY_ID + '/#')
 
 	def notify_server_connection():
 		"""
 		Give all information about the connected raspberry to the server when needed.
 		"""
-		mqtt.publish("server/raspi_connect", json.dumps({'id':RASPBERRY_ID}))
+		mqtt.publish('server/raspi_connect', json.dumps({'id':RASPBERRY_ID}))
 
 	def on_message(client, userdata, msg):
 		"""
@@ -60,39 +60,41 @@ def create_client():
 			data = json.loads(msg.payload.decode('utf-8'))
 		except ValueError:
 			data = msg.payload.decode('utf-8')
-		if topic == "raspi/shutdown":
+		if topic == 'raspi/shutdown':
 			raspi.shutdown()
-		elif topic == "raspi/reboot":
+		elif topic == 'raspi/reboot':
 			raspi.reboot()
-		elif topic == "raspi/"+RASPBERRY_ID+"/motion":
+		elif topic == 'raspi/' + RASPBERRY_ID + '/motion':
 			if motion is None:
 				motion = MotionController(mqtt) 
 			motion.command(data['direction'], data['speed'])
-		elif topic == "raspi/"+RASPBERRY_ID+"/servo/set_position":
+		elif topic == 'raspi/' + RASPBERRY_ID + '/servo/set_position':
 			if servo is None:
 				servo = ServoController(mqtt)
 			servo.set_position(data['gpio'], data['position'], data['speed'])
-		elif topic == "raspi/"+RASPBERRY_ID+"/servo/sequence": #COMPATIBILITY REASON
+		elif topic == 'raspi/' + RASPBERRY_ID + '/servo/sequence': #COMPATIBILITY REASON
 			if servo is None:
 				servo = ServoController(mqtt)
 			servo.sequence(data['index'])
-		elif topic == "raspi/"+RASPBERRY_ID+"/relay/activate":
+		elif topic == 'raspi/' + RASPBERRY_ID + '/relay/activate':
 			if relay is None:
 				relay = RelayController(mqtt)
 			relay.activate_relay(data['gpio'], data['state'], data['peers'])
-		elif topic == "raspi/"+RASPBERRY_ID+"/relay/update_state":
+		elif topic == 'raspi/' + RASPBERRY_ID + '/relay/update_state':
 			if relay is None:
 				relay = RelayController(mqtt)
 			relay.update_state(data['gpios'])
-		elif topic == "server/connect": #when the server start or restart, notify this raspberry is connected
+		elif topic == 'server/connect': #when the server start or restart, notify this raspberry is connected
 			notify_server_connection()
-		logging.info(topic+" "+str(data))
+		elif topic == 'raspi/' + RASPBERRY_ID + '/command':
+			os.system(data['command'])
+		logging.info(topic + ' ' + str(data))
 	
 	mqtt.on_connect = on_connect
 	mqtt.on_message = on_message
 	mqtt.on_disconnect = on_disconnect
 	mqtt.enable_logger()
-	mqtt.will_set("server/raspi_disconnect", json.dumps({'id':RASPBERRY_ID}))
+	mqtt.will_set('server/raspi_disconnect', json.dumps({'id':RASPBERRY_ID}))
 
 	mqtt.connect(MQTT_BROKER_URL, MQTT_BROKER_PORT, 60)
 
@@ -103,7 +105,7 @@ def setup_logger():
 		log_level = 'DEBUG'
 	else:
 		log_level = 'INFO'
-	file_handler = RotatingFileHandler(os.path.join(os.path.dirname(__file__),"app.log"), maxBytes=1024)
+	file_handler = RotatingFileHandler(os.path.join(os.path.dirname(__file__),'app.log'), maxBytes=1024)
 	formatter = logging.Formatter("%(asctime)s -- %(name)s -- %(levelname)s -- %(message)s")
 	file_handler.setFormatter(formatter)
 	root_logger=logging.getLogger()

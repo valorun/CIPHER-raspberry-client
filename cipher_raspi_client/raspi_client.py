@@ -17,15 +17,15 @@ class MotionController():
 			return
 		m1Speed = 0
 		m2Speed = 0
-		if direction == "forwards":
+		if direction == 'forwards':
 			m1Speed = speed
 			m2Speed = speed
-		if direction == "backwards":
+		if direction == 'backwards':
 			m1Speed = -speed
 			m2Speed = -speed
-		if direction == "left":
+		if direction == 'left':
 			m2Speed = speed
-		if direction == "right":
+		if direction == 'right':
 			m1Speed = speed
 
 		# the speeds used by the control card are between 0 and 2047
@@ -99,7 +99,7 @@ class RelayController():
 			else:
 				state=self.wiringpi.digitalRead(gpio)
 			relays_list.append({'gpio':gpio, 'state':state, 'raspi_id':RASPBERRY_ID})
-		self.client.publish("server/update_relays_state", json.dumps({'relays':relays_list}))
+		self.client.publish('server/update_relays_state', json.dumps({'relays':relays_list}))
 
 class RaspiController():
 	def __init__(self, client):

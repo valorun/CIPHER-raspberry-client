@@ -48,8 +48,8 @@ config_set_var() {
 read -p "Raspberry id: " id
 read -p "MQTT server address: " addr
 read -p "MQTT server port: " port
-config_set_var "RASPBERRY_ID" "\"$id\""
-config_set_var "MQTT_BROKER_URL" "\"$(echo $addr | sed -r 's/\./\\./g' | sed -r 's,/,\\/,g')\""
+config_set_var "RASPBERRY_ID" "\'$id\'"
+config_set_var "MQTT_BROKER_URL" "\'$(echo $addr | sed -r 's/\./\\./g' | sed -r 's,/,\\/,g')\''"
 config_set_var "MQTT_BROKER_PORT" $port
 
 ### add to startup ###
