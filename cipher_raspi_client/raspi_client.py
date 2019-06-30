@@ -1,7 +1,7 @@
 import os
 import logging
 import json
-from .config import DEBUG, RASPBERRY_ID
+from .config import DEBUG, RASPBERRY_ID, WHEEL_MODE
 
 class MotionController():
 	def __init__(self, client):
@@ -12,7 +12,7 @@ class MotionController():
 			self.wiringpi.wiringPiSetup()
 			self.serial = self.wiringpi.serialOpen('/dev/serial0',9600)
 	def command(self, direction, speed):
-		logging.info('moving '+direction+", "+str(speed))
+		logging.info('moving '+direction+', '+str(speed))
 		if DEBUG:
 			return
 		m1Speed = 0
@@ -24,9 +24,13 @@ class MotionController():
 			m1Speed = -speed
 			m2Speed = -speed
 		if direction == 'left':
+			if WHEEL_MODE:
+				m1Speed = -speed
 			m2Speed = speed
 		if direction == 'right':
 			m1Speed = speed
+			if WHEEL_MODE:
+				m2Speed = -speed
 
 		# the speeds used by the control card are between 0 and 2047
 		self.wiringpi.serialPuts(self.serial,'M1: '+ str(int(m1Speed * 2047/100)) +'\r\n')
@@ -64,7 +68,7 @@ class RelayController():
 			self.wiringpi.wiringPiSetupGpio() 
 
 	def activate_relay(self, gpio, state, peers=None):
-		logging.info('relay '+str(gpio)+", "+str(state)+", "+str(peers))
+		logging.info('relay ' + str(gpio)+', ' + str(state) + ', ' + str(peers))
 		#check if the peers relays aren't activated
 		if peers is not None and len(peers) != 0:
 			for peer in peers:
@@ -76,7 +80,7 @@ class RelayController():
 		if DEBUG:
 			self.update_state(gpio)
 			return
-		if(state=="" ): #in the case where a state is not specified
+		if(state=='' ): #in the case where a state is not specified
 			state=self.wiringpi.digitalRead(gpio)
 			if(state==1):
 				state=0
