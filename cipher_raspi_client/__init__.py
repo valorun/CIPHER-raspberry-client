@@ -31,13 +31,13 @@ def create_client():
 		if relay is not None:
 			for gpio in range(2, 27):
 				relay.activate_relay(gpio, 0)
-		logging.info('Disconnected from server')
+		logging.info("Disconnected from server")
 
 	def on_connect(client, userdata, flags, rc):
 		"""
 		Function called when the client connect to the server.
 		"""
-		logging.info('Connected with result code ' + str(rc))
+		logging.info("Connected with result code " + str(rc))
 		notify_server_connection()
 		mqtt.subscribe('server/connect')
 		mqtt.subscribe('raspi/shutdown')
@@ -88,7 +88,7 @@ def create_client():
 			notify_server_connection()
 		elif topic == 'raspi/' + RASPBERRY_ID + '/command':
 			os.system(data['command'])
-		logging.info(topic + ' ' + str(data))
+		logging.info(topic + " " + str(data))
 	
 	mqtt.on_connect = on_connect
 	mqtt.on_message = on_message
