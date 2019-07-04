@@ -39,7 +39,7 @@ else
     echo "No requirements file found."
 fi
 ### configure client ###
-CONFIG_FILE=$APP_PATH/config.py
+CONFIG_FILE=$APP_PATH/cipher_raspi_client/config.py
 
 config_set_var() {
     sed -i "s/^\($1\s*=\s*\).*\$/\1$2/" $CONFIG_FILE
