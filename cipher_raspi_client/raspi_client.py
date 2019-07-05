@@ -43,7 +43,7 @@ class ServoController():
 		self.client = client
 		self.debug = debug
 		if not debug:
-			import maestro
+			from . import maestro
 			self.servo = maestro.Controller()
 
 	def set_position(self, gpio:str, position:int, speed:int):
