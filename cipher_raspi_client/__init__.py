@@ -3,7 +3,7 @@ import os
 import logging
 import paho.mqtt.client as Mqtt
 from logging.handlers import RotatingFileHandler
-from .config import *
+from .constants import *
 from .raspi_client import RaspiController, ServoController, RelayController, MotionController
 
 mqtt = None
@@ -13,12 +13,12 @@ motion = None
 relay = None
 servo = None
 
-def create_client():
+def create_client(debug=False):
 	global mqtt, raspi
 
 	mqtt = Mqtt.Client(RASPBERRY_ID)
 
-	raspi = RaspiController(mqtt)
+	raspi = RaspiController(mqtt, debug)
 
 	def on_disconnect(client, userdata, rc):
 		"""
@@ -66,23 +66,23 @@ def create_client():
 			raspi.reboot()
 		elif topic == 'raspi/' + RASPBERRY_ID + '/motion':
 			if motion is None:
-				motion = MotionController(mqtt) 
+				motion = MotionController(mqtt, debug) 
 			motion.command(data['direction'], data['speed'])
 		elif topic == 'raspi/' + RASPBERRY_ID + '/servo/set_position':
 			if servo is None:
-				servo = ServoController(mqtt)
+				servo = ServoController(mqtt, debug)
 			servo.set_position(data['gpio'], data['position'], data['speed'])
 		elif topic == 'raspi/' + RASPBERRY_ID + '/servo/sequence': #COMPATIBILITY REASON
 			if servo is None:
-				servo = ServoController(mqtt)
+				servo = ServoController(mqtt, debug)
 			servo.sequence(data['index'])
 		elif topic == 'raspi/' + RASPBERRY_ID + '/relay/activate':
 			if relay is None:
-				relay = RelayController(mqtt)
+				relay = RelayController(mqtt, debug)
 			relay.activate_relay(data['gpio'], data['state'], data['peers'])
 		elif topic == 'raspi/' + RASPBERRY_ID + '/relay/update_state':
 			if relay is None:
-				relay = RelayController(mqtt)
+				relay = RelayController(mqtt, debug)
 			relay.update_state(data['gpios'])
 		elif topic == 'server/connect': #when the server start or restart, notify this raspberry is connected
 			notify_server_connection()
@@ -100,8 +100,8 @@ def create_client():
 
 	return mqtt
 
-def setup_logger():
-	if DEBUG:
+def setup_logger(debug=False):
+	if debug:
 		log_level = 'DEBUG'
 	else:
 		log_level = 'INFO'

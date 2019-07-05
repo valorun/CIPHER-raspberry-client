@@ -1,19 +1,20 @@
 import os
 import logging
 import json
-from .config import DEBUG, RASPBERRY_ID, WHEEL_MODE
+from .constants import RASPBERRY_ID, WHEEL_MODE
 
 class MotionController():
-	def __init__(self, client):
+	def __init__(self, client, debug=False):
 		self.client = client
-		if not DEBUG:
+		self.debug = debug
+		if not debug:
 			import wiringpi as wp
 			self.wiringpi = wp
 			self.wiringpi.wiringPiSetup()
 			self.serial = self.wiringpi.serialOpen('/dev/serial0',9600)
 	def command(self, direction, speed):
 		logging.info("Moving " + direction + ", " +str(speed))
-		if DEBUG:
+		if self.debug:
 			return
 		m1Speed = 0
 		m2Speed = 0
@@ -38,15 +39,16 @@ class MotionController():
 			
 
 class ServoController():
-	def __init__(self, client):
+	def __init__(self, client, debug=False):
 		self.client = client
-		if not DEBUG:
+		self.debug = debug
+		if not debug:
 			import maestro
 			self.servo = maestro.Controller()
 
 	def set_position(self, gpio:str, position:int, speed:int):
 		logging.info("Servo " + str(gpio) + ", position " + str(position) + ", speed " + str(speed) )
-		if DEBUG:
+		if self.debug:
 			return
 		speed = int(speed/100 * 60) #conversion to maestro speed
 		self.servo.setSpeed(int(gpio), speed)
@@ -55,14 +57,15 @@ class ServoController():
 
 	def sequence(self, index:int):
 		logging.info("Servo sequence " + str(index))
-		if DEBUG:
+		if self.debug:
 			return
 		self.servo.runScriptSub(index)
 
 class RelayController():
-	def __init__(self, client):
+	def __init__(self, client, debug=False):
 		self.client = client
-		if not DEBUG:
+		self.debug = debug
+		if not debug:
 			import wiringpi as wp
 			self.wiringpi = wp
 			self.wiringpi.wiringPiSetupGpio() 
@@ -72,12 +75,12 @@ class RelayController():
 		#check if the peers relays aren't activated
 		if peers is not None and len(peers) != 0:
 			for peer in peers:
-				if(not DEBUG and self.wiringpi.digitalRead(int(peer))==1):
+				if(not self.debug and self.wiringpi.digitalRead(int(peer))==1):
 					return
 
 		logging.info("Relay " + str(gpio) + " ACTIVATED")
 		gpio = int(gpio)
-		if DEBUG:
+		if self.debug:
 			self.update_state(gpio)
 			return
 		if(state == '' ): #in the case where a state is not specified
@@ -98,7 +101,7 @@ class RelayController():
 		logging.info("Updating relays on server")
 		for g in gpios:
 			gpio = int(g)
-			if DEBUG:
+			if self.debug:
 				state = 1
 			else:
 				state = self.wiringpi.digitalRead(gpio)
@@ -106,17 +109,18 @@ class RelayController():
 		self.client.publish('server/update_relays_state', json.dumps({'relays':relays_list}))
 
 class RaspiController():
-	def __init__(self, client):
+	def __init__(self, client, debug=False):
 		self.client = client
+		self.debug = debug
 
 	def shutdown(self):
 		logging.info('Shutting down ...')
-		if DEBUG:
+		if self.debug:
 			return
 		os.system('shutdown -h now')
 		
 	def reboot(self):
 		logging.info('Rebooting ...')
-		if DEBUG:
+		if self.debug:
 			return
 		os.system('reboot -h now')
