@@ -1,0 +1,7 @@
+RASPBERRY_ID='test'
+MQTT_BROKER_URL='localhost'
+MQTT_BROKER_PORT=1883 # default is 1883
+
+WHEEL_MODE=True
+
+DEBUG=True

@@ -26,6 +26,7 @@ else
     install_program "python3-pip"
 fi
 
+
 APP_PATH=$(cd $(dirname "$0") && pwd)
 
 echo "Application path: $APP_PATH"
@@ -38,44 +39,30 @@ else
     echo "No requirements file found."
 fi
 ### configure client ###
-CONFIG_FILE=$APP_PATH/config.py
+CONFIG_FILE=$APP_PATH/cipher_raspi_client/config.py
 
 config_set_var() {
     sed -i "s/^\($1\s*=\s*\).*\$/\1$2/" $CONFIG_FILE
 }
 
-enable_mode(){
-    while true; do
-        read -p "Do you wish to enable $1 ? " yn
-        case $yn in
-            [Yy]* ) config_set_var $1 "True"; break;;
-            [Nn]* ) config_set_var $1 "False"; break;;
-            * ) echo "Please answer yes or no.";;
-        esac
-    done
-}
 read -p "Raspberry id: " id
-read -p "Server address: " addr
-read -p "Server port: " port
-config_set_var "RASPBERRY_ID" "\"$id\""
-config_set_var "SERVER_ADDRESS" "\"$(echo $addr | sed -r 's/\./\\./g' | sed -r 's,/,\\/,g')\""
-config_set_var "SERVER_PORT" $port
-enable_mode "RELAY_MODE"
-enable_mode "MOTION_MODE"
-enable_mode "SERVO_MODE"
+read -p "MQTT server address: " addr
+read -p "MQTT server port: " port
+config_set_var "RASPBERRY_ID" "\'$id\'"
+config_set_var "MQTT_BROKER_URL" "\'$(echo $addr | sed -r 's/\./\\./g' | sed -r 's,/,\\/,g')\'"
+config_set_var "MQTT_BROKER_PORT" $port
 
 ### add to startup ###
 if [ -e /etc/rc.local ]
 then
-    if grep -q "sudo python3 $APP_PATH/app.py &" /etc/rc.local
+    if grep -q "nohup sudo $APP_PATH/app.py &" /etc/rc.local
     then
         echo "Program already added on startup."
     else
         while true; do
             read -p "Do you wish to add this program on startup ? " yn
             case $yn in
-                [Yy]* ) sed -i -e "\$i \\sudo python3 $APP_PATH/app.py &\\n" /etc/rc.local; break;;
-                #[Yy]* ) sed -i -e "\$i \\sudo python3 $APP_PATH/app.py &\\n" ./test; break;;
+                [Yy]* ) sed -i -e "\$i \\nohup sudo $APP_PATH/app.py &\\n" /etc/rc.local; break;;
                 [Nn]* ) exit;;
                 * ) echo "Please answer yes or no.";;
             esac

@@ -1,9 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # coding: utf-8
 
-from raspi_client import create_client, setup_logger 
+from cipher_raspi_client import create_client, setup_logger 
+import logging
+
+DEBUG = True
 
 if __name__ == '__main__':
-    setup_logger()
-    client = create_client()
-    client.wait()
+    setup_logger(debug=DEBUG)
+    client = create_client(debug=DEBUG)
+    logging.info("Application started")
+    client.loop_forever()
