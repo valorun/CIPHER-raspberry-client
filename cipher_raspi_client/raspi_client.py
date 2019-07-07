@@ -76,9 +76,10 @@ class RelayController():
 		if peers is not None and len(peers) != 0:
 			for peer in peers:
 				if(not self.debug and self.wiringpi.digitalRead(int(peer))==1):
+					logging.warning("Cannot activate relay on gpio " + str(gpio) + ", paired relay on gpio " + str(peer) + " already activated.")
 					return
 
-		logging.info("Relay " + str(gpio) + " ACTIVATED")
+		logging.info("Relay " + str(gpio) + " activated.")
 		gpio = int(gpio)
 		if self.debug:
 			self.update_state(gpio)
