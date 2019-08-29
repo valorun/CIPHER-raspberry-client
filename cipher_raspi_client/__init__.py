@@ -3,7 +3,8 @@ import os
 import logging
 import paho.mqtt.client as Mqtt
 from logging.handlers import RotatingFileHandler
-from .constants import *
+from logging.config import dictConfig
+from .constants import RASPBERRY_ID, MQTT_BROKER_URL, MQTT_BROKER_PORT, LOG_FILE
 from .raspi_client import RaspiController, ServoController, RelayController, MotionController
 
 mqtt = None
@@ -105,11 +106,30 @@ def setup_logger(debug=False):
 		log_level = 'DEBUG'
 	else:
 		log_level = 'INFO'
-	file_handler = RotatingFileHandler(os.path.join(os.path.dirname(__file__),'app.log'), maxBytes=1024)
-	formatter = logging.Formatter("%(asctime)s -- %(name)s -- %(levelname)s -- %(message)s")
-	file_handler.setFormatter(formatter)
-	root_logger=logging.getLogger()
-	root_logger.addHandler(file_handler)
-	root_logger.setLevel(log_level)
+	
+	dictConfig({
+        'version': 1,
+        'formatters': {'default': {
+            'format': '%(asctime)s -- %(name)s -- %(levelname)s -- %(message)s',
+        }},
+        'handlers': { 
+            'default': { 
+                'formatter': 'default',
+                'class': 'logging.StreamHandler',
+                'stream': 'ext://sys.stdout',  # Default is stderr
+            },
+            'file': { 
+                'formatter': 'default',
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': LOG_FILE,
+                'maxBytes': 1024
+            }
+        },
+
+        'root': {
+            'level': log_level,
+            'handlers': ['default', 'file']
+        },
+    })
 	
 	
