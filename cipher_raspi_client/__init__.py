@@ -39,11 +39,12 @@ def create_client(debug=False):
 		Function called when the client connect to the server.
 		"""
 		logging.info("Connected with result code " + str(rc))
+		client.subscribe('server/connect')
+		client.subscribe('raspi/shutdown')
+		client.subscribe('raspi/reboot')
+		client.subscribe('raspi/' + RASPBERRY_ID + '/#')
 		notify_server_connection()
-		mqtt.subscribe('server/connect')
-		mqtt.subscribe('raspi/shutdown')
-		mqtt.subscribe('raspi/reboot')
-		mqtt.subscribe('raspi/' + RASPBERRY_ID + '/#')
+
 
 	def notify_server_connection():
 		"""
@@ -80,7 +81,7 @@ def create_client(debug=False):
 		elif topic == 'raspi/' + RASPBERRY_ID + '/relay/activate':
 			if relay is None:
 				relay = RelayController(mqtt, debug)
-			relay.activate_relay(data['gpio'], data['state'], data['peers'])
+			relay.activate_relay(data['gpio'], data['state'])
 		elif topic == 'raspi/' + RASPBERRY_ID + '/relay/update_state':
 			if relay is None:
 				relay = RelayController(mqtt, debug)
