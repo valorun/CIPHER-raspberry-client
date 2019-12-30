@@ -111,7 +111,7 @@ def setup_logger(debug=False):
 	dictConfig({
         'version': 1,
         'formatters': {'default': {
-            'format': '%(asctime)s -- %(name)s -- %(levelname)s -- %(message)s',
+            'format': '%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(name)s: %(message)s',
         }},
         'handlers': { 
             'default': { 
