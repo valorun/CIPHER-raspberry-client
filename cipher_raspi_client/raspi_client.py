@@ -70,18 +70,15 @@ class RelayController():
 			self.wiringpi = wp
 			self.wiringpi.wiringPiSetupGpio() 
 
-	def activate_relay(self, gpio, state, peers=None):
-		logging.info("Relay " + str(gpio) + ", " + str(state) + ", " + str(peers))
-		#check if the peers relays aren't activated
-		if peers is not None and len(peers) != 0:
-			for peer in peers:
-				if(not self.debug and self.wiringpi.digitalRead(int(peer))==1):
-					return
+	def activate_relay(self, gpio, state):
+		if state == 1:
+			logging.info("Relay " + str(gpio) + " activated.")
+		else:
+			logging.info("Relay " + str(gpio) + " desactivated.")
 
-		logging.info("Relay " + str(gpio) + " ACTIVATED")
 		gpio = int(gpio)
 		if self.debug:
-			self.update_state(gpio)
+			self.update_state([gpio])
 			return
 		if(state == '' ): #in the case where a state is not specified
 			state = self.wiringpi.digitalRead(gpio)
