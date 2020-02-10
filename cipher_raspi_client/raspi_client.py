@@ -13,7 +13,7 @@ class MotionController():
 			self.wiringpi.wiringPiSetup()
 			self.serial = self.wiringpi.serialOpen('/dev/serial0',9600)
 	def command(self, direction, speed):
-		logging.info("Moving " + direction + ", " +str(speed))
+		logging.info("Moving " + direction + ", " + str(speed))
 		if self.debug:
 			return
 		m1Speed = 0
