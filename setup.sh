@@ -39,18 +39,20 @@ else
     echo "No requirements file found."
 fi
 ### configure client ###
-CONFIG_FILE=$APP_PATH/cipher_raspi_client/constants.py
+CONFIG_FILE=$APP_PATH/cipher_raspi_client/config.ini
 
-config_set_var() {
-    sed -i "s/^\($1\s*=\s*\).*\$/\1$2/" $CONFIG_FILE
-}
+read -p "Raspberry id [UNKNOWN]: " id
+read -p "MQTT server address [localhost]: " addr
+read -p "MQTT server port [1883]: " port
+id=${id:-UNKNOWN}
+addr=${addr:-localhost}
+port=${port:-1883}
 
-read -p "Raspberry id: " id
-read -p "MQTT server address: " addr
-read -p "MQTT server port: " port
-config_set_var "RASPBERRY_ID" "\'$id\'"
-config_set_var "MQTT_BROKER_URL" "\'$(echo $addr | sed -r 's/\./\\./g' | sed -r 's,/,\\/,g')\'"
-config_set_var "MQTT_BROKER_PORT" $port
+echo -e "[GENERAL]" > $CONFIG_FILE
+echo -e "RASPBERRY_ID=$id" >> $CONFIG_FILE
+echo -e "\n[MQTT_BROKER]" >> $CONFIG_FILE
+echo -e "URL=$addr" >> $CONFIG_FILE
+echo -e "PORT=$port" >> $CONFIG_FILE
 
 ### add to startup ###
 if [ -e /etc/rc.local ]
@@ -69,5 +71,5 @@ then
         done
     fi
 else
-    echo "No rc.local file found, can't add program on startup."
+    echo "No rc.local file not found, can't add program on startup."
 fi
