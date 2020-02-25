@@ -4,7 +4,7 @@ import logging
 import paho.mqtt.client as Mqtt
 from logging.handlers import RotatingFileHandler
 from logging.config import dictConfig
-from .constants import RASPBERRY_ID, MQTT_BROKER_URL, MQTT_BROKER_PORT, LOG_FILE
+from .config import client_config
 from .raspi_client import RaspiController, ServoController, RelayController, MotionController
 
 mqtt = None
@@ -17,7 +17,7 @@ servo = None
 def create_client(debug=False):
 	global mqtt, raspi
 
-	mqtt = Mqtt.Client(RASPBERRY_ID)
+	mqtt = Mqtt.Client(client_config.RASPBERRY_ID)
 
 	raspi = RaspiController(mqtt, debug)
 
@@ -26,7 +26,7 @@ def create_client(debug=False):
 		Automatically disable relays and motors on disconnect.
 		"""
 		global relay, motion
-		mqtt.publish('server/raspi_disconnect', json.dumps({'id':RASPBERRY_ID}))
+		mqtt.publish('server/raspi_disconnect', json.dumps({'id':client_config.RASPBERRY_ID}))
 		if motion is not None:
 			motion.command(0, 0)
 		if relay is not None:
@@ -42,7 +42,7 @@ def create_client(debug=False):
 		client.subscribe('server/connect')
 		client.subscribe('raspi/shutdown')
 		client.subscribe('raspi/reboot')
-		client.subscribe('raspi/' + RASPBERRY_ID + '/#')
+		client.subscribe('raspi/' + client_config.RASPBERRY_ID + '/#')
 		notify_server_connection()
 
 
@@ -50,7 +50,7 @@ def create_client(debug=False):
 		"""
 		Give all information about the connected raspberry to the server when needed.
 		"""
-		mqtt.publish('server/raspi_connect', json.dumps({'id':RASPBERRY_ID}))
+		mqtt.publish('server/raspi_connect', json.dumps({'id':client_config.RASPBERRY_ID}))
 
 	def on_message(client, userdata, msg):
 		"""
@@ -66,29 +66,29 @@ def create_client(debug=False):
 			raspi.shutdown()
 		elif topic == 'raspi/reboot':
 			raspi.reboot()
-		elif topic == 'raspi/' + RASPBERRY_ID + '/motion':
+		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/motion':
 			if motion is None:
 				motion = MotionController(mqtt, debug) 
 			motion.command(data['direction'], data['speed'])
-		elif topic == 'raspi/' + RASPBERRY_ID + '/servo/set_position':
+		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/servo/set_position':
 			if servo is None:
 				servo = ServoController(mqtt, debug)
 			servo.set_position(data['gpio'], data['position'], data['speed'])
-		elif topic == 'raspi/' + RASPBERRY_ID + '/servo/sequence': #COMPATIBILITY REASON
+		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/servo/sequence': #COMPATIBILITY REASON
 			if servo is None:
 				servo = ServoController(mqtt, debug)
 			servo.sequence(data['index'])
-		elif topic == 'raspi/' + RASPBERRY_ID + '/relay/activate':
+		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/relay/activate':
 			if relay is None:
 				relay = RelayController(mqtt, debug)
 			relay.activate_relay(data['gpio'], data['state'])
-		elif topic == 'raspi/' + RASPBERRY_ID + '/relay/update_state':
+		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/relay/update_state':
 			if relay is None:
 				relay = RelayController(mqtt, debug)
 			relay.update_state(data['gpios'])
 		elif topic == 'server/connect': #when the server start or restart, notify this raspberry is connected
 			notify_server_connection()
-		elif topic == 'raspi/' + RASPBERRY_ID + '/command':
+		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/command':
 			os.system(data['command'])
 		logging.info(topic + " " + str(data))
 	
@@ -96,9 +96,9 @@ def create_client(debug=False):
 	mqtt.on_message = on_message
 	mqtt.on_disconnect = on_disconnect
 	mqtt.enable_logger()
-	mqtt.will_set('server/raspi_disconnect', json.dumps({'id':RASPBERRY_ID}))
+	mqtt.will_set('server/raspi_disconnect', json.dumps({'id':client_config.RASPBERRY_ID}))
 
-	mqtt.connect(MQTT_BROKER_URL, MQTT_BROKER_PORT, 60)
+	mqtt.connect(client_config.MQTT_BROKER_URL, client_config.MQTT_BROKER_PORT, 60)
 
 	return mqtt
 
@@ -122,7 +122,7 @@ def setup_logger(debug=False):
             'file': { 
                 'formatter': 'default',
                 'class': 'logging.handlers.RotatingFileHandler',
-                'filename': LOG_FILE,
+                'filename': client_config.LOG_FILE,
                 'maxBytes': 1024
             }
         },

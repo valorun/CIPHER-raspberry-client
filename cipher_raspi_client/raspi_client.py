@@ -1,7 +1,7 @@
 import os
 import logging
 import json
-from .constants import RASPBERRY_ID, WHEEL_MODE
+from .config import client_config
 
 class MotionController():
 	def __init__(self, client, debug=False):
@@ -13,7 +13,7 @@ class MotionController():
 			self.wiringpi.wiringPiSetup()
 			self.serial = self.wiringpi.serialOpen('/dev/serial0',9600)
 	def command(self, direction, speed):
-		logging.info("Moving " + direction + ", " +str(speed))
+		logging.info("Moving " + direction + ", " + str(speed))
 		if self.debug:
 			return
 		m1Speed = 0
@@ -25,12 +25,12 @@ class MotionController():
 			m1Speed = -speed
 			m2Speed = -speed
 		if direction == 'left':
-			if WHEEL_MODE:
+			if client_config.WHEEL_MODE:
 				m1Speed = -speed
 			m2Speed = speed
 		if direction == 'right':
 			m1Speed = speed
-			if WHEEL_MODE:
+			if client_config.WHEEL_MODE:
 				m2Speed = -speed
 
 		# the speeds used by the control card are between 0 and 2047
@@ -102,7 +102,7 @@ class RelayController():
 				state = 1
 			else:
 				state = self.wiringpi.digitalRead(gpio)
-			relays_list.append({'gpio':gpio, 'state':state, 'raspi_id':RASPBERRY_ID})
+			relays_list.append({'gpio':gpio, 'state':state, 'raspi_id':client_config.RASPBERRY_ID})
 		self.client.publish('server/update_relays_state', json.dumps({'relays':relays_list}))
 
 class RaspiController():
