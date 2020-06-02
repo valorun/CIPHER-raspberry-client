@@ -13,7 +13,11 @@ class MotionController():
 			self.wiringpi.wiringPiSetup()
 			self.serial = self.wiringpi.serialOpen('/dev/serial0',9600)
 	def command(self, direction, speed):
-		logging.info("Moving " + direction + ", " + str(speed))
+		if direction == 'stop':
+			logging.info("Stopping motion")
+		else:
+			logging.info("Moving " + direction + ", " + str(speed))
+
 		if self.debug:
 			return
 		m1Speed = 0
@@ -21,18 +25,24 @@ class MotionController():
 		if direction == 'forwards':
 			m1Speed = speed
 			m2Speed = speed
-		if direction == 'backwards':
+		elif direction == 'backwards':
 			m1Speed = -speed
 			m2Speed = -speed
-		if direction == 'left':
+		elif direction == 'left':
 			if client_config.WHEEL_MODE:
 				m1Speed = -speed
 			m2Speed = speed
-		if direction == 'right':
+		elif direction == 'right':
 			m1Speed = speed
 			if client_config.WHEEL_MODE:
 				m2Speed = -speed
-
+		elif direction == 'stop':
+			m1Speed = 0
+			m2Speed = 0
+		else:
+			logging.warning("Unknown direction '" + direction + "', stopping motion ...")
+			m1Speed = 0
+			m2Speed = 0
 		# the speeds used by the control card are between 0 and 2047
 		self.wiringpi.serialPuts(self.serial,'M1: '+ str(int(m1Speed * 2047/100)) +'\r\n')
 		self.wiringpi.serialPuts(self.serial,'M2: '+ str(int(m2Speed * 2047/100)) +'\r\n')

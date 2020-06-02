@@ -71,5 +71,5 @@ then
         done
     fi
 else
-    echo "No rc.local file not found, can't add program on startup."
+    echo "No rc.local file found, can't add program on startup."
 fi
