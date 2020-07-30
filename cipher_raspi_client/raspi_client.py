@@ -12,6 +12,7 @@ class MotionController():
 			self.wiringpi = wp
 			self.wiringpi.wiringPiSetup()
 			self.serial = self.wiringpi.serialOpen('/dev/serial0',9600)
+
 	def command(self, direction, speed):
 		if direction == 'stop':
 			logging.info("Stopping motion")
@@ -46,7 +47,6 @@ class MotionController():
 		# the speeds used by the control card are between 0 and 2047
 		self.wiringpi.serialPuts(self.serial,'M1: '+ str(int(m1Speed * 2047/100)) +'\r\n')
 		self.wiringpi.serialPuts(self.serial,'M2: '+ str(int(m2Speed * 2047/100)) +'\r\n')
-			
 
 class ServoController():
 	def __init__(self, client, debug=False):
@@ -65,6 +65,16 @@ class ServoController():
 		position = position * 4 #conversion to maestro position (quarter micro-sec)
 		self.servo.setTarget(int(gpio), position)
 
+	def get_position(self, gpio:str):
+		gpio = int(gpio)
+		if self.debug:
+			position = 0
+			speed = 0
+		else:
+			position = self.servo.getPosition(gpio)
+			speed = self.servo.getSpeed(gpio)
+		self.client.publish('server/servo/receive_position', json.dumps({'gpio':gpio, 'position':position, 'speed':speed}))
+
 	def sequence(self, index:int):
 		logging.info("Servo sequence " + str(index))
 		if self.debug:
@@ -75,6 +85,7 @@ class RelayController():
 	def __init__(self, client, debug=False):
 		self.client = client
 		self.debug = debug
+		self.relays = [] # list of pins corresponding to activated relays
 		if not debug:
 			import wiringpi as wp
 			self.wiringpi = wp
@@ -96,8 +107,10 @@ class RelayController():
 				state = 0
 			else:
 				state = 1
-		self.wiringpi.pinMode(gpio,1)
+		self.wiringpi.pinMode(gpio, 1)
 		self.wiringpi.digitalWrite(gpio, state)
+		if state == 1 and gpio not in self.relays:
+			self.relays.append(gpio)
 		self.update_state([gpio])
 
 	def update_state(self, gpios):
@@ -114,6 +127,10 @@ class RelayController():
 				state = self.wiringpi.digitalRead(gpio)
 			relays_list.append({'gpio':gpio, 'state':state, 'raspi_id':client_config.RASPBERRY_ID})
 		self.client.publish('server/update_relays_state', json.dumps({'relays':relays_list}))
+
+	def stop(self):
+		for r in self.relays:
+			self.activate_relay(r, 0)
 
 class RaspiController():
 	def __init__(self, client, debug=False):

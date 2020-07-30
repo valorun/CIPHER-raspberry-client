@@ -28,10 +28,10 @@ def create_client(debug=False):
 		global relay, motion
 		mqtt.publish('server/raspi_disconnect', json.dumps({'id':client_config.RASPBERRY_ID}))
 		if motion is not None:
-			motion.command(0, 0)
+			motion.command('stop', 0)
 		if relay is not None:
-			for gpio in range(2, 27):
-				relay.activate_relay(gpio, 0)
+			relay.stop()
+
 		logging.info("Disconnected from server")
 
 	def on_connect(client, userdata, flags, rc):
@@ -74,6 +74,10 @@ def create_client(debug=False):
 			if servo is None:
 				servo = ServoController(mqtt, debug)
 			servo.set_position(data['gpio'], data['position'], data['speed'])
+		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/servo/get_position':
+			if servo is None:
+				servo = ServoController(mqtt, debug)
+			servo.get_position(data['gpio']) # SET LES RANGES AU LANCEMENT DE CIPHER, ET RENVOYER LES RESULTS
 		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/servo/sequence': #COMPATIBILITY REASON
 			if servo is None:
 				servo = ServoController(mqtt, debug)
@@ -89,7 +93,7 @@ def create_client(debug=False):
 		elif topic == 'server/connect': #when the server start or restart, notify this raspberry is connected
 			notify_server_connection()
 		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/command':
-			os.system(data['command'])
+			os.system(data['command'])			
 		logging.info(topic + " " + str(data))
 	
 	mqtt.on_connect = on_connect
