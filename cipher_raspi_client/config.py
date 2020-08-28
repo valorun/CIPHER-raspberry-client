@@ -16,6 +16,9 @@ class ClientConfig(ConfigFile):
 
         self.RASPBERRY_ID = self.get('GENERAL', 'RASPBERRY_ID', 
             fallback='UNKNOWN')
+
+        self.ICON = self.get('GENERAL', 'ICON', 
+            fallback='fab fa-raspberry-pi')
     
         self.MQTT_BROKER_URL = self.get('MQTT_BROKER', 'URL', 
             fallback='localhost')
