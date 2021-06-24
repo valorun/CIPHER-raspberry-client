@@ -35,7 +35,7 @@ source $APP_PATH/venv/bin/activate
 if [ -e $APP_PATH/requirements.txt ]
 then
     echo "Installing python dependencies ..."
-    pip3 install -r $APP_PATH/requirements.txt
+    $APP_PATH/venv/bin/pip3 install -r $APP_PATH/requirements.txt
 else
     echo "No requirements file found."
 fi
