@@ -5,7 +5,7 @@ import paho.mqtt.client as Mqtt
 from logging.handlers import RotatingFileHandler
 from logging.config import dictConfig
 from .config import client_config
-from .raspi_client import RaspiController, ServoController, RelayController, MotionController
+from .raspi_client import RaspiController, AdafruitServoController, MaestroServoController, RelayController, MotionController
 
 mqtt = None
 
@@ -72,7 +72,10 @@ def create_client(debug=False):
 			motion.command(data['direction'], data['speed'])
 		elif topic == 'client/' + client_config.RASPBERRY_ID + '/servo/set_position':
 			if servo is None:
-				servo = ServoController(mqtt, debug)
+				if client_config.RASPBERRY_ID == 'adafruit':
+					servo = AdafruitServoController(mqtt, debug)
+				else:
+					servo = MaestroServoController(mqtt, debug)
 			servo.set_position(data['gpio'], data['position'], data['speed'])
 		elif topic == 'client/' + client_config.RASPBERRY_ID + '/servo/get_position':
 			if servo is None:

@@ -32,6 +32,9 @@ class ClientConfig(ConfigFile):
         self.WHEEL_MODE = self.getboolean('MOTION', 'WHEEL_MODE', 
             fallback=False)
 
+        self.SERVO_CONTROLLER = self.getboolean('SERVO', 'CONTROLLER', 
+            fallback='maestro') # maestro or adafruit
+
         self.DEBUG = self.getboolean('CLIENT', 'DEBUG', 
             fallback=False)
 

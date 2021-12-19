@@ -48,10 +48,32 @@ class MotionController():
 		self.wiringpi.serialPuts(self.serial,'M1: '+ str(int(m1Speed * 2047/100)) +'\r\n')
 		self.wiringpi.serialPuts(self.serial,'M2: '+ str(int(m2Speed * 2047/100)) +'\r\n')
 
-class ServoController():
+class ServoController:
 	def __init__(self, client, debug=False):
 		self.client = client
 		self.debug = debug
+		
+	def set_position(self, gpio:str, position:int, speed:int):
+		logging.info("Servo " + str(gpio) + ", position " + str(position) + ", speed " + str(speed) )
+		if self.debug:
+			return
+
+class AdafruitServoController(ServoController):			
+	def __init__(self, client, debug=False):
+		self.client = client
+		self.debug = debug
+		if not debug:
+			from adafruit_servokit import ServoKit
+			self.servo = ServoKit(channels=8)
+	def set_position(self, channel:str, position:int, speed:int):
+		logging.info("Servo " + str(channel) + ", position " + str(position) + ", speed " + str(speed) )
+		if self.debug:
+			return
+		self.servo[int(channel)].angle = position
+
+class MaestroServoController(ServoController):
+	def __init__(self, client, debug=False):
+		ServoController.__init__(self, client, debug)
 		if not debug:
 			from . import maestro
 			self.servo = maestro.Controller()
