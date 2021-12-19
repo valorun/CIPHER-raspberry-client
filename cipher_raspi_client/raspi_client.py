@@ -30,12 +30,12 @@ class MotionController():
 			m1Speed = -speed
 			m2Speed = -speed
 		elif direction == 'left':
-			if client_config.WHEEL_MODE:
+			if not client_config.WHEEL_MODE:
 				m1Speed = -speed
 			m2Speed = speed
 		elif direction == 'right':
 			m1Speed = speed
-			if client_config.WHEEL_MODE:
+			if not client_config.WHEEL_MODE:
 				m2Speed = -speed
 		elif direction == 'stop':
 			m1Speed = 0
