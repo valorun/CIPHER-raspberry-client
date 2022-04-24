@@ -65,10 +65,14 @@ class AdafruitServoController(ServoController):
 		if not debug:
 			from adafruit_servokit import ServoKit
 			self.servo = ServoKit(channels=8)
+
 	def set_position(self, channel:str, position:int, speed:int):
 		logging.info("Servo " + str(channel) + ", position " + str(position) + ", speed " + str(speed) )
 		if self.debug:
 			return
+		max_pulse = 2250
+		min_pulse = 750
+		position = (position - min_pulse) / (max_pulse - min_pulse) * 180 #convert to degrees
 		self.servo[int(channel)].angle = position
 
 class MaestroServoController(ServoController):
