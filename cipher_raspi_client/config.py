@@ -14,7 +14,7 @@ class ClientConfig(ConfigFile):
     def __init__(self, filepath):
         ConfigFile.__init__(self, filepath)
 
-        self.RASPBERRY_ID = self.get('GENERAL', 'RASPBERRY_ID', 
+        self.RASPBERRY_ID = self.get('GENERAL', 'MQTT_CLIENT_ID', 
             fallback='UNKNOWN')
 
         self.ICON = self.get('GENERAL', 'ICON', 
@@ -35,7 +35,7 @@ class ClientConfig(ConfigFile):
         self.SERVO_CONTROLLER = self.get('SERVO', 'CONTROLLER', 
             fallback='maestro') # maestro or adafruit
 
-        self.DEBUG = self.getboolean('CLIENT', 'DEBUG', 
+        self.DEBUG = self.getboolean('GENERAL', 'DEBUG', 
             fallback=False)
 
 

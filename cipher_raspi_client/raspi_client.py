@@ -70,10 +70,11 @@ class AdafruitServoController(ServoController):
 		logging.info("Servo " + str(channel) + ", position " + str(position) + ", speed " + str(speed) )
 		if self.debug:
 			return
-		max_pulse = 2250
-		min_pulse = 750
-		position = (position - min_pulse) / (max_pulse - min_pulse) * 180 #convert to degrees
+
 		self.servo[int(channel)].angle = position
+	
+	def get_position(self, channel:str):
+		return self.servo[int(channel)].angle
 
 class MaestroServoController(ServoController):
 	def __init__(self, client, debug=False):
@@ -81,14 +82,23 @@ class MaestroServoController(ServoController):
 		if not debug:
 			from . import maestro
 			self.servo = maestro.Controller()
+		
+		self.max_pulse = 2400
+		self.min_pulse = 544
+		self.max_angle = 180
+		self.min_angle = 0
+
 
 	def set_position(self, gpio:str, position:int, speed:int):
 		logging.info("Servo " + str(gpio) + ", position " + str(position) + ", speed " + str(speed) )
+		# Conversion from degree to micro-sec
+		position = ((self.max_pulse - self.min_pulse) / (self.max_angle - self.min_angle)) * (position - self.max_angle) + self.max_pulse
+		position = position * 4 #conversion to maestro position (quarter micro-sec)
+		logging.debug("Converted servo position: " + str(position))
 		if self.debug:
 			return
 		speed = int(speed/100 * 60) #conversion to maestro speed
 		self.servo.setSpeed(int(gpio), speed)
-		position = position * 4 #conversion to maestro position (quarter micro-sec)
 		self.servo.setTarget(int(gpio), position)
 
 	def get_position(self, gpio:str):

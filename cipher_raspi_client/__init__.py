@@ -57,6 +57,16 @@ def create_client(debug=False):
 		Function called when a message is received from the server.
 		"""
 		global motion, relay, servo
+
+		def get_servo_controller():
+			global servo
+			if servo is None:
+				if client_config.SERVO_CONTROLLER == 'adafruit':
+					servo = AdafruitServoController(mqtt, debug)
+				else:
+					servo = MaestroServoController(mqtt, debug)
+			return servo
+
 		topic = msg.topic
 		try:
 			data = json.loads(msg.payload.decode('utf-8'))
@@ -71,19 +81,13 @@ def create_client(debug=False):
 				motion = MotionController(mqtt, debug) 
 			motion.command(data['direction'], data['speed'])
 		elif topic == 'client/' + client_config.RASPBERRY_ID + '/servo/set_position':
-			if servo is None:
-				if client_config.RASPBERRY_ID == 'adafruit':
-					servo = AdafruitServoController(mqtt, debug)
-				else:
-					servo = MaestroServoController(mqtt, debug)
+			servo = get_servo_controller()
 			servo.set_position(data['gpio'], data['position'], data['speed'])
 		elif topic == 'client/' + client_config.RASPBERRY_ID + '/servo/get_position':
-			if servo is None:
-				servo = ServoController(mqtt, debug)
+			servo = get_servo_controller()
 			servo.get_position(data['gpio']) # SET LES RANGES AU LANCEMENT DE CIPHER, ET RENVOYER LES RESULTS
 		elif topic == 'client/' + client_config.RASPBERRY_ID + '/servo/sequence': #COMPATIBILITY REASON
-			if servo is None:
-				servo = ServoController(mqtt, debug)
+			servo = get_servo_controller()
 			servo.sequence(data['index'])
 		elif topic == 'client/' + client_config.RASPBERRY_ID + '/relay/activate':
 			if relay is None:

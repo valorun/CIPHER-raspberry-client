@@ -50,7 +50,7 @@ addr=${addr:-localhost}
 port=${port:-1883}
 
 echo -e "[GENERAL]" > $CONFIG_FILE
-echo -e "RASPBERRY_ID=$id" >> $CONFIG_FILE
+echo -e "MQTT_CLIENT_ID=$id" >> $CONFIG_FILE
 echo -e "\n[MQTT_BROKER]" >> $CONFIG_FILE
 echo -e "URL=$addr" >> $CONFIG_FILE
 echo -e "PORT=$port" >> $CONFIG_FILE
