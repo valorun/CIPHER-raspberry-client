@@ -5,7 +5,7 @@ import paho.mqtt.client as Mqtt
 from logging.handlers import RotatingFileHandler
 from logging.config import dictConfig
 from .config import client_config
-from .raspi_client import RaspiController, ServoController, RelayController, MotionController
+from .raspi_client import RaspiController, AdafruitServoController, MaestroServoController, RelayController, MotionController
 
 mqtt = None
 
@@ -28,10 +28,10 @@ def create_client(debug=False):
 		global relay, motion
 		mqtt.publish('server/raspi_disconnect', json.dumps({'id':client_config.RASPBERRY_ID}))
 		if motion is not None:
-			motion.command(0, 0)
+			motion.command('stop', 0)
 		if relay is not None:
-			for gpio in range(2, 27):
-				relay.activate_relay(gpio, 0)
+			relay.stop()
+
 		logging.info("Disconnected from server")
 
 	def on_connect(client, userdata, flags, rc):
@@ -42,7 +42,7 @@ def create_client(debug=False):
 		client.subscribe('server/connect')
 		client.subscribe('raspi/shutdown')
 		client.subscribe('raspi/reboot')
-		client.subscribe('raspi/' + client_config.RASPBERRY_ID + '/#')
+		client.subscribe('client/' + client_config.RASPBERRY_ID + '/#')
 		notify_server_connection()
 
 
@@ -50,13 +50,23 @@ def create_client(debug=False):
 		"""
 		Give all information about the connected raspberry to the server when needed.
 		"""
-		mqtt.publish('server/raspi_connect', json.dumps({'id':client_config.RASPBERRY_ID}))
+		mqtt.publish('client/connect', json.dumps({'id':client_config.RASPBERRY_ID, 'icon':client_config.ICON}))
 
 	def on_message(client, userdata, msg):
 		"""
 		Function called when a message is received from the server.
 		"""
 		global motion, relay, servo
+
+		def get_servo_controller():
+			global servo
+			if servo is None:
+				if client_config.SERVO_CONTROLLER == 'adafruit':
+					servo = AdafruitServoController(mqtt, debug)
+				else:
+					servo = MaestroServoController(mqtt, debug)
+			return servo
+
 		topic = msg.topic
 		try:
 			data = json.loads(msg.payload.decode('utf-8'))
@@ -66,37 +76,40 @@ def create_client(debug=False):
 			raspi.shutdown()
 		elif topic == 'raspi/reboot':
 			raspi.reboot()
-		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/motion':
+		elif topic == 'client/' + client_config.RASPBERRY_ID + '/motion':
 			if motion is None:
 				motion = MotionController(mqtt, debug) 
 			motion.command(data['direction'], data['speed'])
-		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/servo/set_position':
-			if servo is None:
-				servo = ServoController(mqtt, debug)
+		elif topic == 'client/' + client_config.RASPBERRY_ID + '/servo/set_position':
+			servo = get_servo_controller()
 			servo.set_position(data['gpio'], data['position'], data['speed'])
-		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/servo/sequence': #COMPATIBILITY REASON
-			if servo is None:
-				servo = ServoController(mqtt, debug)
+		elif topic == 'client/' + client_config.RASPBERRY_ID + '/servo/get_position':
+			servo = get_servo_controller()
+			servo.get_position(data['gpio']) # SET LES RANGES AU LANCEMENT DE CIPHER, ET RENVOYER LES RESULTS
+		elif topic == 'client/' + client_config.RASPBERRY_ID + '/servo/sequence': #COMPATIBILITY REASON
+			servo = get_servo_controller()
 			servo.sequence(data['index'])
-		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/relay/activate':
+		elif topic == 'client/' + client_config.RASPBERRY_ID + '/relay/activate':
 			if relay is None:
 				relay = RelayController(mqtt, debug)
 			relay.activate_relay(data['gpio'], data['state'])
-		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/relay/update_state':
+		elif topic == 'client/' + client_config.RASPBERRY_ID + '/relay/update_state':
 			if relay is None:
 				relay = RelayController(mqtt, debug)
 			relay.update_state(data['gpios'])
 		elif topic == 'server/connect': #when the server start or restart, notify this raspberry is connected
 			notify_server_connection()
-		elif topic == 'raspi/' + client_config.RASPBERRY_ID + '/command':
-			os.system(data['command'])
+		elif topic == 'client/' + client_config.RASPBERRY_ID + '/command':
+			os.system(data['command'])			
+		elif topic == 'client/' + client_config.RASPBERRY_ID + '/exit':
+			exit(0)
 		logging.info(topic + " " + str(data))
 	
 	mqtt.on_connect = on_connect
 	mqtt.on_message = on_message
 	mqtt.on_disconnect = on_disconnect
-	mqtt.enable_logger()
-	mqtt.will_set('server/raspi_disconnect', json.dumps({'id':client_config.RASPBERRY_ID}))
+	#mqtt.enable_logger()
+	mqtt.will_set('server/client_disconnect', json.dumps({'id':client_config.RASPBERRY_ID}))
 
 	mqtt.connect(client_config.MQTT_BROKER_URL, client_config.MQTT_BROKER_PORT, 60)
 

@@ -1,3 +1,4 @@
 wiringpi
 pyserial
 paho-mqtt
+adafruit-circuitpython-servokit

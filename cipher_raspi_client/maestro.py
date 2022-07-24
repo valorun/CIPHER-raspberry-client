@@ -37,6 +37,7 @@ class Controller:
         # use the Target vs Current servo position to determine if movement is
         # occuring.  Upto 24 servos on a Maestro, (0-23). Targets start at 0.
         self.Targets = [0] * 24
+        self.Speeds = [0] * 24
         # Servo minimum and maximum targets can be restricted to protect components.
         self.Mins = [0] * 24
         self.Maxs = [0] * 24
@@ -71,6 +72,10 @@ class Controller:
     # Return Maximum channel range value
     def getMax(self, chan):
         return self.Maxs[chan]
+
+    # Return channel speed value
+    def getSpeed(self, chan):
+        return self.Speeds[chan]
         
     # Set channel to a specified target value.  Servo will begin moving based
     # on Speed and Acceleration parameters previously set.
@@ -104,6 +109,7 @@ class Controller:
         msb = (speed >> 7) & 0x7f #shift 7 and take next 7 bits for msb
         cmd = chr(0x07) + chr(chan) + chr(lsb) + chr(msb)
         self.sendCmd(cmd)
+        self.Speeds[chan] = speed
 
     # Set acceleration of channel
     # This provide soft starts and finishes when servo moves to target position.

@@ -14,8 +14,11 @@ class ClientConfig(ConfigFile):
     def __init__(self, filepath):
         ConfigFile.__init__(self, filepath)
 
-        self.RASPBERRY_ID = self.get('GENERAL', 'RASPBERRY_ID', 
+        self.RASPBERRY_ID = self.get('GENERAL', 'MQTT_CLIENT_ID', 
             fallback='UNKNOWN')
+
+        self.ICON = self.get('GENERAL', 'ICON', 
+            fallback='fab fa-raspberry-pi')
     
         self.MQTT_BROKER_URL = self.get('MQTT_BROKER', 'URL', 
             fallback='localhost')
@@ -29,7 +32,10 @@ class ClientConfig(ConfigFile):
         self.WHEEL_MODE = self.getboolean('MOTION', 'WHEEL_MODE', 
             fallback=False)
 
-        self.DEBUG = self.getboolean('CLIENT', 'DEBUG', 
+        self.SERVO_CONTROLLER = self.get('SERVO', 'CONTROLLER', 
+            fallback='maestro') # maestro or adafruit
+
+        self.DEBUG = self.getboolean('GENERAL', 'DEBUG', 
             fallback=False)
 
 
