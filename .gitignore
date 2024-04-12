@@ -1,4 +1,6 @@
 __pycache__
 *.log
 *.pyc
-*.ini
+*.ini# pixi environments
+.pixi
+
